@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms.DataVisualization.Charting;
 
+// TODO: Comment all classes, methods, and properties
 namespace X
 {
 	public interface IPointContainer
