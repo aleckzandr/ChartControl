@@ -774,9 +774,11 @@ namespace ChartControls
 				Func<KeyValuePair<string, IPointData>, object> asort = kvp => kvp.Value.Values[z];
 				Data.Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { firstSort, asort };
 
-				Data.DescendingOrderBys = new bool[] {
+				Data.DescendingOrderBys = new bool[]
+				{
 					Data.DescendingOrderBys[0],
-					selected.EndsWith(descendingMark, StringComparison.CurrentCultureIgnoreCase) };
+					selected.EndsWith(descendingMark, StringComparison.CurrentCultureIgnoreCase)
+				};
 
 				pageIdx = 0;
 				Bind();

@@ -695,10 +695,7 @@ namespace ChartControls
 
 				cData.Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { asort };
 
-				if (selected.EndsWith(descendingMark, StringComparison.CurrentCultureIgnoreCase))
-					cData.DescendingOrderBys = new bool[] { true };
-				else
-					cData.DescendingOrderBys = new bool[] { false };
+				cData.DescendingOrderBys = new bool[] { selected.EndsWith(descendingMark, StringComparison.CurrentCultureIgnoreCase) };
 
 				pageIdx = 0;
 				Bind();
@@ -739,11 +736,11 @@ namespace ChartControls
 				Func<KeyValuePair<string, IPointData>, object> asort = kvp => kvp.Value.Values[z];
 				cData.Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { firstSort, asort };
 
-				bool firstOrder = cData.DescendingOrderBys[0];
-				if (selected.EndsWith(descendingMark, StringComparison.CurrentCultureIgnoreCase))
-					cData.DescendingOrderBys = new bool[] { firstOrder, true };
-				else
-					cData.DescendingOrderBys = new bool[] { firstOrder, false };
+				cData.DescendingOrderBys = new bool[]
+				{
+					cData.DescendingOrderBys[0],
+					selected.EndsWith(descendingMark, StringComparison.CurrentCultureIgnoreCase)
+				};
 
 				pageIdx = 0;
 				Bind();
