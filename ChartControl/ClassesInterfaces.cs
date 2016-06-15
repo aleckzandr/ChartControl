@@ -1207,4 +1207,40 @@ namespace X
 	{
 		public int LegendIndex { get; set; }
 	}
+
+	public class Item : IComparable<Item>, IEquatable<Item>
+	{
+		public string Name;
+		public int Value;
+
+		public Item(string name, int value)
+		{
+			Name = name; Value = value;
+		}
+
+		public override string ToString()
+		{
+			// Generates the text shown in the combo box
+			return Name;
+		}
+
+		public bool Equals(Item other)
+		{
+			if (other != null && other.Value == this.Value)
+				return true;
+			else
+				return false;
+		}
+
+		public int CompareTo(Item other)
+		{
+			return other == null ? 1 : this.Value.CompareTo(other.Value);
+		}
+
+		public override int GetHashCode()
+		{
+			return Value;
+		}
+	}
+
 }

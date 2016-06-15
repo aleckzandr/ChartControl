@@ -733,10 +733,7 @@ namespace ChartControls
 
 				Data.Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { asort };
 
-				if (selected.EndsWith(descendingMark, StringComparison.CurrentCultureIgnoreCase))
-					Data.DescendingOrderBys = new bool[] { true };
-				else
-					Data.DescendingOrderBys = new bool[] { false };
+				Data.DescendingOrderBys = new bool[] { selected.EndsWith(descendingMark, StringComparison.CurrentCultureIgnoreCase) };
 
 				pageIdx = 0;
 				Bind();
