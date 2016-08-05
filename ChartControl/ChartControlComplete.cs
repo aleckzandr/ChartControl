@@ -126,6 +126,9 @@ namespace ChartControls
 
 		#endregion
 
+		/// <summary>
+		/// For finding our lowest and highest values
+		/// </summary>
 		private void PointsScan()
 		{
 			pointsScanned = true;
@@ -573,7 +576,7 @@ namespace ChartControls
 				if (isd.RequiresUserSelection)
 					checkBoxShowUserSelection.Visible = true;
 
-				this.mChart.Series.Add(ChartControlSimple.CreateSeries(Data, isd, ca.Name));
+				this.mChart.Series.Add(ChartData.CreateSeries(Data, isd, ca.Name));
 			}
 			#endregion
 

@@ -10,27 +10,7 @@ namespace ChartControls
 {
 	public partial class ChartControlSimple : UserControl
 	{
-		public static Series CreateSeries(IChartData chartData, ISeriesData isd, string chartAreaName, string customProperties = "DrawingStyle=Cylinder, EmptyPointValue=Zero, PointWidth=0.5")
-		{
-			var sz = new Series()
-			{
-				BorderWidth = isd.LineWidth > 0 ? isd.LineWidth : 1,
-				ChartArea = chartAreaName,
-				ChartType = isd.ChartType,
-				Color = isd.Color,
-				CustomProperties = chartData.CustomProperties != null ? chartData.CustomProperties : customProperties, // allow empty string
-				Enabled = !isd.RequiresUserSelection,
-				Font = chartData.Theme.SeriesFont,
-				LabelForeColor = isd.LabelForeColor,
-				Legend = chartData.EnableLegend && chartData.Theme.Legends.Count > isd.LegendIndex ? chartData.Theme.Legends[isd.LegendIndex].Name : null,
-				LegendText = isd.LegendText,
-				Name = isd.Name,
-				XValueType = isd.ValueTypeX,
-				YValueType = isd.ValueTypeY
-			};
-
-			return sz;
-		}
+		public string SeriesCustomProps { get; set; }
 
 		private bool controlLoaded;
 		private IChartData _data;
@@ -53,6 +33,7 @@ namespace ChartControls
 		/// </summary>
 		public ChartControlSimple()
 		{
+			SeriesCustomProps = ChartData.SeriesCustomPropsDefault; // set to something custom here
 			InitializeComponent();
 		}
 
@@ -61,10 +42,10 @@ namespace ChartControls
 			if (!controlLoaded) // wait for the control to be loaded first
 				return;
 
-			var oList = Data.Sorts != null && Data.Sorts.Count > 0 ? Data.Sort(Data.Points, Data.Sorts.ToArray()) : Data.Points;
+			var pointData = Data.Sorts != null && Data.Sorts.Count > 0 ? Data.Sort(Data.Points, Data.Sorts.ToArray()) : Data.Points;
 
-			foreach (var srxm in this.mChart.Series)
-				srxm.Points.Clear();
+			foreach (var srs in this.mChart.Series)
+				srs.Points.Clear();
 
 			if (Data.PrimaryYPointIndex > this.mChart.Series.Count - 1) // code will still bomb if no series
 				Data.PrimaryYPointIndex = this.mChart.Series.Count - 1; // prevents out of range exception
@@ -72,7 +53,7 @@ namespace ChartControls
 			Series primary = this.mChart.Series[Data.PrimaryYPointIndex]; // this bombs if there are no series, that's ok, want that. Out of range is currently checked in Form_Load()
 
 			int dpi = 0;
-			foreach (var kvp in oList)
+			foreach (var kvp in pointData)
 			{
 				if (kvp.Value != null && kvp.Value.Values != null && kvp.Value.Values.Length > 0)
 				{
@@ -334,11 +315,12 @@ namespace ChartControls
 
 			// Legends must be done first
 			foreach (var isd in Data.Series)
-				this.mChart.Series.Add(CreateSeries(Data, isd, ca.Name));
+				this.mChart.Series.Add(ChartData.CreateSeries(Data, isd, ca.Name, SeriesCustomProps));
 
 			#endregion
 
 			controlLoaded = true; // must be set here, before Bind()
+
 			Bind();
 		}
 	}

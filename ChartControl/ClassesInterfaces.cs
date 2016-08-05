@@ -133,6 +133,7 @@ namespace X
 
 	public class ChartData : IChartData
 	{
+		#region instance
 		public IEnumerable<KeyValuePair<string, IPointData>> Points { get; set; }
 
 		public bool[] DescendingOrderBys { get; set; }
@@ -165,13 +166,28 @@ namespace X
 
 		public int PrimaryYPointIndex { get; set; }
 
-		public int PageSize { get; set; }
+		private int _pageSize = int.MaxValue;
+		public int PageSize { get { return _pageSize; } set { _pageSize = value; } }
 
 		public IList<ISeriesData> Series { get; set; }
 
 		public string CustomProperties { get; set; }
 
-		public string PagingText { get; set; } // "Chart", "Graph", etc
+		private string _pagingText = null;
+		public string PagingText  // "Chart", "Graph", etc
+		{
+			get
+			{
+				if (_pagingText == null)
+					_pagingText = "Chart";
+
+				return _pagingText;
+			}
+			set
+			{
+				_pagingText = value;
+			}
+		}
 
 		public string TitleControl { get; set; }
 
@@ -195,7 +211,12 @@ namespace X
 
 		public string YAxisUnitOfMeasure { get; set; }
 
-		public double XAxisInterval { get; set; }
+		private double _xAxisInterval = 1d;
+		public double XAxisInterval
+		{
+			get { return _xAxisInterval; }
+			set { _xAxisInterval = value; }
+		}
 
 		public IList<IStripLineContainer> StripLinesXAxis { get; set; }
 
@@ -231,7 +252,33 @@ namespace X
 
 		public IThemeChart Theme { get; set; }
 
-		#region static methods
+		#endregion
+
+		#region static
+
+		public const string SeriesCustomPropsDefault = "DrawingStyle=Cylinder, EmptyPointValue=Zero, PointWidth=0.5";
+
+		public static Series CreateSeries(IChartData chartData, ISeriesData isd, string chartAreaName, string customProperties = SeriesCustomPropsDefault)
+		{
+			var sz = new Series()
+			{
+				BorderWidth = isd.LineWidth > 0 ? isd.LineWidth : 1,
+				ChartArea = chartAreaName,
+				ChartType = isd.ChartType,
+				Color = isd.Color,
+				CustomProperties = chartData.CustomProperties != null ? chartData.CustomProperties : customProperties, // allow empty string
+				Enabled = !isd.RequiresUserSelection,
+				Font = chartData.Theme.SeriesFont,
+				LabelForeColor = isd.LabelForeColor,
+				Legend = chartData.EnableLegend && chartData.Theme.Legends.Count > isd.LegendIndex ? chartData.Theme.Legends[isd.LegendIndex].Name : null,
+				LegendText = isd.LegendText,
+				Name = isd.Name,
+				XValueType = isd.ValueTypeX,
+				YValueType = isd.ValueTypeY
+			};
+
+			return sz;
+		}
 
 		public static Dictionary<string, IPointData> GetRandomPointData(int numOfRecords, IList<ISeriesData> seriesData, string pointFormat = "TS # ")
 		{
