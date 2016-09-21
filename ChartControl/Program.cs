@@ -20,6 +20,8 @@ namespace X
 			//Application.Run(new Test(GetData(ChartThemeStyle.Light)));
 			//Application.Run(new Test());
 			Application.Run(new ChartControls.TestForm(ChartThemeStyle.Dark));
+
+			//Application.Run(new ChartControls.TestChart());
 		}
 
 		/// <summary>
@@ -141,7 +143,6 @@ namespace X
 				{
 					Values = new double[] { native, instantOff, on, polar, test }
 					//, Names = sNames
-					, TextFirst = string.Format("Testing{0}", i)
 					, SelectedPointLabelFormat = "{0} - {1} voltage: {2}mV", // must have 3 params, or empty string
 				});
 			}
@@ -158,7 +159,7 @@ namespace X
 				//Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { sort1, sort2 }, // { sort3 } // { sort1, sort2 }
 				//Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { kvp => kvp.Value.YPoints[0] },
 				Series = seriesList,
-				PrimaryYPointIndex = 1, // In this case: 0 = Native, 1 = Instant Off, etc.
+				PrimaryArrayIndex = 1, // In this case: 0 = Native, 1 = Instant Off, etc.
 				PagingText = "Chart", //"Graph",
 				XAxisInterval = 1d,
 				TitleControl = "Pipe to Soil Potentials",

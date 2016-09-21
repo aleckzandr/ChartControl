@@ -35,33 +35,48 @@ namespace X
 
 	public interface IPointData
 	{
-		int ID { get; set; } // max 2,147,483,647
-		//Int64 ID { get; set; } // max 9,223,372,036,854,775,807
-		//string[] Names { get; set; }
-		double[] Values { get; set; }
-		string SelectedPointLabelFormat { get; set; } // must have 3 params, i.e. "{0} - {1} {2}" or empty string
+		/// <summary>
+		/// An ID to use, if wanted
+		/// </summary>
+		int ID { get; set; } // max 2,147,483,647		//Int64 ID { get; set; } // max 9,223,372,036,854,775,807
 
-		DateTime DateFirst { get; set; }
-		DateTime DateSecond { get; set; }
-		string TextFirst { get; set; }
-		string TextSecond { get; set; }
-		Double DoubleFirst { get; set; }
-		Double DoubleSecond { get; set; }
+		/// <summary>
+		/// The array of values (on the y-Axis)
+		/// </summary>
+		double[] Values { get; set; }
+
+		/// <summary>
+		/// A fomat string for a label, must have 3 params, i.e. "{0} - {1} {2}" or empty string
+		/// </summary>
+		string SelectedPointLabelFormat { get; set; }
+
+		/// <summary>
+		/// An object one can associate with the IPointData
+		/// </summary>
+		object Bag { get; set; }
 	}
 
 	public class PointData : IPointData
 	{
-		public int ID { get; set; } // max 2,147,483,647
-		//public string[] Names { get; set; }
-		public double[] Values { get; set; }
-		public string SelectedPointLabelFormat { get; set; } // must have 3 params, i.e. "{0} - {1} {2}" or empty string
+		/// <summary>
+		/// An ID to use, if wanted
+		/// </summary>
+		public int ID { get; set; } // max 2,147,483,647		//Int64 ID { get; set; } // max 9,223,372,036,854,775,807
 
-		public DateTime DateFirst { get; set; }
-		public DateTime DateSecond { get; set; }
-		public string TextFirst { get; set; }
-		public string TextSecond { get; set; }
-		public Double DoubleFirst { get; set; }
-		public Double DoubleSecond { get; set; }
+		/// <summary>
+		/// The array of values (on the y-Axis)
+		/// </summary>
+		public double[] Values { get; set; }
+
+		/// <summary>
+		/// A fomat string for a label, must have 3 params, i.e. "{0} - {1} {2}" or empty string
+		/// </summary>
+		public string SelectedPointLabelFormat { get; set; }
+
+		/// <summary>
+		///  An object one can associate with the IPointData
+		/// </summary>
+		public object Bag { get; set; }
 	}
 
 	public interface IChartData
@@ -76,7 +91,7 @@ namespace X
 			IEnumerable<KeyValuePair<string, IPointData>> src,
 			params Func<KeyValuePair<string, IPointData>, T>[] sort);
 
-		int PrimaryYPointIndex { get; set; }
+		int PrimaryArrayIndex { get; set; }
 
 		int PageSize { get; set; }
 
@@ -109,6 +124,8 @@ namespace X
 		string YAxisUnitOfMeasure { get; set; }
 
 		double XAxisInterval { get; set; }
+
+		bool XAxisIsReversed { get; set; }
 
 		IList<IStripLineContainer> StripLinesXAxis { get; set; }
 
@@ -164,7 +181,7 @@ namespace X
 			return retval;
 		}
 
-		public int PrimaryYPointIndex { get; set; }
+		public int PrimaryArrayIndex { get; set; }
 
 		private int _pageSize = int.MaxValue;
 		public int PageSize { get { return _pageSize; } set { _pageSize = value; } }
@@ -218,6 +235,8 @@ namespace X
 			set { _xAxisInterval = value; }
 		}
 
+		public bool XAxisIsReversed { get; set; }
+
 		public IList<IStripLineContainer> StripLinesXAxis { get; set; }
 
 		public IList<IStripLineContainer> StripLinesYAxis { get; set; }
@@ -256,6 +275,7 @@ namespace X
 
 		#region static
 
+		// see https://msdn.microsoft.com/en-us/library/dd456764.aspx
 		public const string SeriesCustomPropsDefault = "DrawingStyle=Cylinder, EmptyPointValue=Zero, PointWidth=0.5";
 
 		public static Series CreateSeries(IChartData chartData, ISeriesData isd, string chartAreaName, string customProperties = SeriesCustomPropsDefault)
@@ -266,7 +286,7 @@ namespace X
 				ChartArea = chartAreaName,
 				ChartType = isd.ChartType,
 				Color = isd.Color,
-				CustomProperties = chartData.CustomProperties != null ? chartData.CustomProperties : customProperties, // allow empty string
+				CustomProperties = isd.CustomProperties != null ? isd.CustomProperties : chartData.CustomProperties != null ? chartData.CustomProperties : customProperties, // allow empty string
 				Enabled = !isd.RequiresUserSelection,
 				Font = chartData.Theme.SeriesFont,
 				LabelForeColor = isd.LabelForeColor,
@@ -311,7 +331,6 @@ namespace X
 				{
 					Values = new double[] { native, instantOff, on, polar, test }
 					//, Names = sNames
-					, TextFirst = string.Format("Testing{0}", i)
 					, SelectedPointLabelFormat = "{0} {1} voltage: {2}mV" // must have 3 params, i.e. "{0} - {1} {2}" or empty string
 				});
 			}
@@ -418,7 +437,7 @@ namespace X
 				//Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { kvp.Value.YPoints[0] },
 				Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { kvp => kvp.Key.Length, kvp => kvp.Key },
 				Series = seriesList,
-				PrimaryYPointIndex = 1, // In this case: 0 = Native, 1 = Instant Off, etc.
+				PrimaryArrayIndex = 1, // In this case: 0 = Native, 1 = Instant Off, etc.
 				PagingText = "Chart", // "Graph", "Chart", etc.
 				XAxisInterval = 1d, // 1d = every point has an axis label, 5d = every 5th point has an axis label
 				TitleControl = "Pipe to soil potentials",
@@ -509,7 +528,6 @@ namespace X
 				dict.Add(txt, new PointData()
 				{
 					Values = new double[] { dat }
-					, TextFirst = string.Format("Testing{0}", i)
 					, SelectedPointLabelFormat = "{0} - {1} : {2}mA", // must have 3 params, or empty string
 				});
 			}
@@ -522,7 +540,7 @@ namespace X
 				//Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { sort1, sort2 }, // { sort3 } // { sort1, sort2 }
 				//Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { kvp => kvp.Value.YPoints[0] },
 				Series = seriesList,
-				PrimaryYPointIndex = 0,
+				PrimaryArrayIndex = 0,
 				PagingText = "Chart", //"Graph",
 				XAxisInterval = 1d,
 				TitleControl = "Current Output",
@@ -540,14 +558,6 @@ namespace X
 						ForeColor =  theme.YAxis.StripLineForeColor,
 						Width = theme.YAxis.StripLineBorderWidth
 					},
-					//new StripLineContainer()
-					//{
-					//	StripLineValue = 30d,
-					//	StripLineColor = Color.Purple,
-					//	StripLineStyle = ChartDashStyle.DashDotDot,
-					//	ForeColor =  Color.Purple,
-					//	Width = theme.YAxis.StripLineBorderWidth
-					//},
 					new StripLineContainer()
 					{
 						StripLineValue = 35d,
@@ -614,7 +624,6 @@ namespace X
 				dict.Add(txt, new PointData()
 				{
 					Values = new double[] { dat }
-					, TextFirst = string.Format("Testing{0}", i)
 					, SelectedPointLabelFormat = "{0} - {1} : {2}", // must have 3 params, or empty string
 				});
 			}
@@ -627,7 +636,7 @@ namespace X
 				//Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { sort1, sort2 }, // { sort3 } // { sort1, sort2 }
 				//Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { kvp => kvp.Value.YPoints[0] },
 				Series = seriesList,
-				PrimaryYPointIndex = 0,
+				PrimaryArrayIndex = 0,
 				PagingText = "Chart", //"Graph",
 				XAxisInterval = 1d,
 				TitleControl = "Circuit Resistance",
@@ -648,6 +657,246 @@ namespace X
 				Points = dict,
 				Theme = new ThemeChart(theme)
 			};
+		}
+
+		/// <summary>
+		/// Method to bind data to a chart control
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="pChart"></param>
+		public static void Bind(IChartData data, Chart pChart, bool enableXAxisCursor = false, bool enableYAxisCursor = false) // if data.Points is null this method bombs, which we want
+		{
+			pChart.Legends.Clear();
+			pChart.Series.Clear();
+
+			var pointData = data.Sorts != null && data.Sorts.Count > 0 ? data.Sort(data.Points, data.Sorts.ToArray()) : data.Points;
+
+			#region Chart Area initialization, cursors, and theme/color stuff
+			ChartArea ca;
+			if (pChart.ChartAreas.Count > 0)
+			{
+				ca = pChart.ChartAreas[0];
+				ca.AxisX.StripLines.Clear();
+				ca.AxisY.StripLines.Clear();
+			}
+			else
+			{
+				ca = new ChartArea("Main");
+				pChart.ChartAreas.Add(ca);
+			}
+
+			// mutual chart theme stuff
+			pChart.BackColor = data.Theme.BackColor;
+			pChart.BackGradientStyle = data.Theme.BackGradientStyle;
+			pChart.BackSecondaryColor = data.Theme.BackSecondaryColor;
+			pChart.BorderlineColor = data.Theme.BorderColor;
+
+			// mutual chart ~area~ theme stuff (regardless if using a new ChartArea or not) 
+			ca.BackColor = data.Theme.AreaBackColor;
+			ca.BackGradientStyle = data.Theme.AreaBackGradientStyle;
+			ca.BackSecondaryColor = data.Theme.AreaBackSecondaryColor;
+			ca.BorderColor = data.Theme.AreaBorderColor;
+
+			#region Chart X-Axis
+
+			ca.AxisX.StripLines.Clear();
+			ca.CursorX.IsUserEnabled = enableXAxisCursor;
+			ca.CursorX.IsUserSelectionEnabled = enableXAxisCursor;
+			ca.CursorX.LineWidth = data.Theme.XAxis.StripLineBorderWidth;
+			ca.CursorX.SelectionColor = data.Theme.XAxis.StripLineBorderColor;
+
+			ca.AxisX.Interval = data.XAxisInterval;
+			ca.AxisX.IsReversed = data.XAxisIsReversed;
+
+			ca.AxisX.Title = data.TitleXAxis ?? ca.AxisX.Title;
+			ca.AxisX.TitleFont = data.Theme.XAxis.TitleFont;
+			ca.AxisX.TitleForeColor = data.Theme.XAxis.TitleForeColor;
+			ca.AxisX.InterlacedColor = data.Theme.XAxis.InterlacedColor;
+			ca.AxisX.LabelStyle.ForeColor = data.Theme.XAxis.LabelStyleForeColor;
+			if (data.Theme.XAxis.LabelStyleFormat != null)
+				ca.AxisX.LabelStyle.Format = data.Theme.XAxis.LabelStyleFormat;
+			ca.AxisX.LineColor = data.Theme.XAxis.LineColor;
+			ca.AxisX.MajorGrid.LineColor = data.Theme.XAxis.MajorGridLineColor;
+			ca.AxisX.MajorTickMark.Enabled = data.Theme.XAxis.MajorTickMarkEnabled;
+			ca.AxisX.MajorTickMark.LineColor = data.Theme.XAxis.MajorTickMarkColor;
+
+			#endregion
+
+			#region Chart Y-Axis
+
+			ca.AxisY.StripLines.Clear();
+			ca.CursorY.IsUserEnabled = enableYAxisCursor;
+			ca.CursorY.IsUserSelectionEnabled = enableYAxisCursor;
+			ca.CursorY.LineWidth = data.Theme.YAxis.StripLineBorderWidth;
+			ca.CursorY.SelectionColor = data.Theme.YAxis.StripLineBorderColor;
+
+			if (data.YAxisMinimum > 0)
+			{
+				ca.AxisY.IsStartedFromZero = ca.AxisY2.IsStartedFromZero = false;
+				ca.AxisY.Minimum = ca.AxisY2.Minimum = data.YAxisMinimum;
+			}
+
+			if (data.YAxisMaximum > 0)
+				ca.AxisY.Maximum = ca.AxisY2.Maximum = data.YAxisMaximum;
+
+			ca.AxisY.Title = data.TitleYAxis ?? ca.AxisY.Title;
+			ca.AxisY.TitleFont = ca.AxisY2.TitleFont = data.Theme.YAxis.TitleFont;
+			ca.AxisY.TitleForeColor = ca.AxisY2.TitleForeColor = data.Theme.YAxis.TitleForeColor;
+			ca.AxisY.InterlacedColor = ca.AxisY2.InterlacedColor = data.Theme.YAxis.InterlacedColor;
+			ca.AxisY.LabelStyle.ForeColor = ca.AxisY2.LabelStyle.ForeColor = data.Theme.YAxis.LabelStyleForeColor;
+			if (data.Theme.YAxis.LabelStyleFormat != null)
+				ca.AxisY.LabelStyle.Format = data.Theme.YAxis.LabelStyleFormat;
+			ca.AxisY.LineColor = ca.AxisY2.LineColor = data.Theme.YAxis.LineColor;
+			ca.AxisY.MajorGrid.LineColor = ca.AxisY2.MajorGrid.LineColor = data.Theme.YAxis.MajorGridLineColor;
+			ca.AxisY.MajorTickMark.Enabled = ca.AxisY2.MajorTickMark.Enabled = data.Theme.YAxis.MajorTickMarkEnabled;
+			ca.AxisY.MajorTickMark.LineColor = ca.AxisY2.MajorTickMark.LineColor = data.Theme.YAxis.MajorTickMarkColor;
+
+			#endregion
+
+			#endregion
+
+			#region Chart Titles (note: does not delete any titles in list, only adds them)
+			var tlCount = data.Theme.Titles.Count;
+			if (!string.IsNullOrEmpty(data.TitleChart) && tlCount > 0)
+			{
+				var mainTitle = data.Theme.Titles[0];
+				pChart.Titles.Add(new Title()
+				{
+					Docking = mainTitle.Docking,
+					IsDockedInsideChartArea = mainTitle.IsDockedInsideChartArea,
+					DockedToChartArea = ca.Name,
+					Font = mainTitle.Font,
+					ForeColor = mainTitle.Color,
+					Position = mainTitle.Position,
+					Name = mainTitle.Name,
+					Text = data.TitleChart
+				});
+			}
+
+			if (!string.IsNullOrEmpty(data.TitleChart2) && tlCount > 1)
+			{
+				var subTitle = data.Theme.Titles[1];
+				pChart.Titles.Add(new Title()
+				{
+					Docking = subTitle.Docking,
+					IsDockedInsideChartArea = subTitle.IsDockedInsideChartArea,
+					DockedToChartArea = ca.Name,
+					Font = subTitle.Font,
+					ForeColor = subTitle.Color,
+					Position = subTitle.Position,
+					Name = subTitle.Name,
+					Text = data.TitleChart2
+				});
+			}
+			#endregion
+
+			#region Chart Legends (note: 
+			// this must be done before Series
+			if (data.EnableLegend)
+			{
+				int lgdIdx = 0;
+				foreach (var lg in data.Theme.Legends)
+				{
+					var lgd = new Legend()
+					{
+						AutoFitMinFontSize = lg.AutoFitMinFontSize,
+						BackColor = lg.BackColor,
+						BorderColor = lg.BorderColor,
+						Font = lg.Font,
+						ForeColor = lg.ForeColor,
+						IsTextAutoFit = lg.IsTextAutoFit,
+						LegendItemOrder = lg.LegendItemOrder,
+						LegendStyle = lg.LegendStyle,
+						MaximumAutoSize = lg.MaximumAutoSize,
+						Name = lg.Name,
+						Position = lg.Position
+					};
+
+					if (data.LegendItems != null)
+						foreach (var li in data.LegendItems.Where(x => x.LegendIndex == lgdIdx))
+							lgd.CustomItems.Add(li);
+
+					pChart.Legends.Add(lgd);
+					lgdIdx++;
+				}
+			}
+			#endregion
+
+			#region Strip Lines
+			if (data.StripLinesYAxis != null && data.StripLinesYAxis.Any())
+			{
+				foreach (var stripLine in data.StripLinesYAxis)
+				{
+					ca.AxisY.StripLines.Add(new StripLine()
+					{
+						BorderColor = stripLine.StripLineColor,
+						BorderDashStyle = stripLine.StripLineStyle,
+						BorderWidth = stripLine.Width,
+						ForeColor = stripLine.ForeColor,
+						IntervalOffset = stripLine.StripLineValue,
+						ToolTip = string.Format("{0} {1}", stripLine.StripLineValue, data.YAxisUnitOfMeasure) // stripLine.ToolTip
+					});
+
+					if (data.EnableYAxisStripLineLabels)
+					{
+						ca.AxisY2.Enabled = AxisEnabled.True;
+						ca.AxisY2.CustomLabels.Add(new CustomLabel()
+						{
+							ForeColor = stripLine.ForeColor,
+							FromPosition = stripLine.StripLineValue - 10,
+							MarkColor = stripLine.StripLineColor,
+							Text = string.Format("{0}{1}{2}", (data.IsYAxisUnitOfMeasureNegative ? "-" : ""), stripLine.StripLineValue, data.YAxisUnitOfMeasure),
+							ToPosition = stripLine.StripLineValue + 10
+						});
+					}
+				}
+			}
+			#endregion
+
+			// note legends must be done first
+			foreach (var isd in data.Series)
+				pChart.Series.Add(CreateSeries(data, isd, ca.Name));
+
+			if (data.PrimaryArrayIndex > pChart.Series.Count - 1)
+				data.PrimaryArrayIndex = pChart.Series.Count - 1; // trys to prevent out of range exception
+
+			Series primary = pChart.Series[data.PrimaryArrayIndex];
+
+			var srs = data.Series.ElementAt(data.PrimaryArrayIndex); // cannot be out of range
+
+			int dpi = 0; // data point index
+			foreach (var kvp in pointData)
+			{
+				if (kvp.Value != null && kvp.Value.Values != null && kvp.Value.Values.Length > 0)
+				{
+					double yValue = kvp.Value.Values[data.PrimaryArrayIndex]; // still potential out of range
+
+					primary.Points.Add(new DataPoint(dpi, yValue)
+					{
+						AxisLabel = kvp.Key,
+						Tag = new PointContainer() { Name = kvp.Key, PointData = kvp.Value },
+						ToolTip = string.Format("{0}: {1}{2}", srs.Name, yValue.ToString(srs.YPointFormat), srs.UnitOfMeasure)
+					});
+
+					for (int si = 0; si < pChart.Series.Count; si++)
+					{
+						if (si == data.PrimaryArrayIndex) // if so we  use the datapoint above in primary series
+							continue;
+
+						if (kvp.Value.Values.Length > si) // because we are iterating through series, not the array elements
+						{
+							double jValue = kvp.Value.Values[si];
+							var srx = data.Series.ElementAt(si);
+
+							pChart.Series[si].Points.Add(new DataPoint(dpi, jValue)
+							{
+								ToolTip = string.Format("{0}: {1}{2}", srx.Name, jValue.ToString(srx.YPointFormat), srx.UnitOfMeasure)
+							});
+						}
+					}
+				}
+				dpi++;
+			}
 		}
 
 		#endregion
@@ -998,6 +1247,8 @@ namespace X
 
 		Color LabelStyleForeColor { get; set; }
 
+		string LabelStyleFormat { get; set; }
+
 		Color LineColor { get; set; }
 
 		Color MajorGridLineColor { get; set; }
@@ -1034,6 +1285,8 @@ namespace X
 		public Color InterlacedColor { get; set; }
 
 		public Color LabelStyleForeColor { get; set; }
+
+		public string LabelStyleFormat { get; set; }
 
 		public Color LineColor { get; set; }
 
@@ -1168,6 +1421,8 @@ namespace X
 		ChartDashStyle StripLineStyle { get; set; }
 
 		int Width { get; set; }
+
+		//string ToolTip { get; set; }
 	}
 
 	public class StripLineContainer : IStripLineContainer
@@ -1181,6 +1436,8 @@ namespace X
 		public ChartDashStyle StripLineStyle { get; set; }
 
 		public int Width { get; set; }
+
+		//public string ToolTip { get; set; }
 	}
 
 	public interface ISeriesData
@@ -1212,6 +1469,8 @@ namespace X
 		ChartValueType ValueTypeX { get; set; }
 
 		ChartValueType ValueTypeY { get; set; }
+
+		string CustomProperties { get; set; }
 	}
 
 	public class SeriesData : ISeriesData
@@ -1248,6 +1507,8 @@ namespace X
 		public ChartValueType ValueTypeX { get; set; }
 
 		public ChartValueType ValueTypeY { get; set; }
+
+		public string CustomProperties { get; set; }
 	}
 
 	public class SILegendItem : LegendItem

@@ -37,7 +37,7 @@ namespace ChartControls
 			InitializeComponent();
 		}
 
-		internal void Bind() // if cData.Points is null this bombs, which we want
+		internal void Bind() // if Data.Points is null this bombs, which we want
 		{
 			if (!controlLoaded) // wait for the control to be loaded first
 				return;
@@ -47,57 +47,61 @@ namespace ChartControls
 			foreach (var srs in this.mChart.Series)
 				srs.Points.Clear();
 
-			if (Data.PrimaryYPointIndex > this.mChart.Series.Count - 1) // code will still bomb if no series
-				Data.PrimaryYPointIndex = this.mChart.Series.Count - 1; // prevents out of range exception
+			if (Data.PrimaryArrayIndex > this.mChart.Series.Count - 1) // code will still bomb if no series
+				Data.PrimaryArrayIndex = this.mChart.Series.Count - 1; // prevents out of range exception
 
-			Series primary = this.mChart.Series[Data.PrimaryYPointIndex]; // this bombs if there are no series, that's ok, want that. Out of range is currently checked in Form_Load()
+			Series primary = this.mChart.Series[Data.PrimaryArrayIndex]; // this bombs if there are no series, that's ok, want that. Out of range is currently checked in Form_Load()
+
+			var srxp = Data.Series.ElementAt(Data.PrimaryArrayIndex);
 
 			int dpi = 0;
 			foreach (var kvp in pointData)
 			{
 				if (kvp.Value != null && kvp.Value.Values != null && kvp.Value.Values.Length > 0)
 				{
-					double yValue = kvp.Value.Values[Data.PrimaryYPointIndex]; // potential out of range
-
-					var srxp = Data.Series.ElementAt(Data.PrimaryYPointIndex);
-
-					string sName = srxp.Name; // again, potential out of range // kvp.Value.Names.ElementAt(primarySeriesIdx);
+					double yValue = kvp.Value.Values[Data.PrimaryArrayIndex]; // potential out of range
 
 					double compValueSecond = 0d;
 					double compValueFirst = 0d;
 					double difference = 0d;
 
-					if (sName.Equals(Data.SeriesNameComparisonOne, StringComparison.CurrentCultureIgnoreCase))
+					if (srxp.Name.Equals(Data.SeriesNameComparisonOne, StringComparison.CurrentCultureIgnoreCase))
 						compValueFirst = yValue;
-					else if (sName.Equals(Data.SeriesNameComparisonTwo, StringComparison.CurrentCultureIgnoreCase))
+					else if (srxp.Name.Equals(Data.SeriesNameComparisonTwo, StringComparison.CurrentCultureIgnoreCase))
 						compValueSecond = yValue;
 
 					var datapoint = new DataPoint(dpi, yValue)
 					{
 						AxisLabel = kvp.Key,
 						Tag = new PointContainer() { Name = kvp.Key, PointData = kvp.Value },
-						ToolTip = string.Format("{0}: {1}{2}", sName, yValue.ToString(srxp.YPointFormat), srxp.UnitOfMeasure)
+						ToolTip = string.Format("{0}: {1}{2}", srxp.Name, yValue.ToString(srxp.YPointFormat), srxp.UnitOfMeasure)
 					};
+
+					if (ValidationComparison(compValueFirst, compValueSecond, Data.PrimaryArrayIndex, out difference))
+						PointSetLabel(datapoint, string.Format("{0}*", difference.ToString(srxp.YPointFormat)));
+					else if (srxp.EnablePointLabel && yValue > 0)
+						PointSetLabel(datapoint, string.Format("{0}{1}", yValue.ToString(srxp.YPointFormat), srxp.UnitOfMeasure));
+
+					primary.Points.Add(datapoint);
 
 					for (int si = 0; si < this.mChart.Series.Count; si++)
 					{
-						if (si == Data.PrimaryYPointIndex) // we  use the datapoint above
+						if (si == Data.PrimaryArrayIndex) // we  use the datapoint above
 							continue;
 
 						if (kvp.Value.Values.Length > si)
 						{
 							double jValue = kvp.Value.Values[si];
 							var srx = Data.Series.ElementAt(si);
-							sName = srx.Name; // kvp.Value.Names.ElementAt(si);
 
-							if (sName.Equals(Data.SeriesNameComparisonOne, StringComparison.CurrentCultureIgnoreCase))
+							if (srx.Name.Equals(Data.SeriesNameComparisonOne, StringComparison.CurrentCultureIgnoreCase))
 								compValueFirst = jValue;
-							else if (sName.Equals(Data.SeriesNameComparisonTwo, StringComparison.CurrentCultureIgnoreCase))
+							else if (srx.Name.Equals(Data.SeriesNameComparisonTwo, StringComparison.CurrentCultureIgnoreCase))
 								compValueSecond = jValue;
 
 							var dpoint = new DataPoint(dpi, jValue)
 							{
-								ToolTip = string.Format("{0}: {1}{2}", sName, jValue.ToString(srx.YPointFormat), srx.UnitOfMeasure)
+								ToolTip = string.Format("{0}: {1}{2}", srx.Name, jValue.ToString(srx.YPointFormat), srx.UnitOfMeasure)
 							};
 
 							if (ValidationComparison(compValueFirst, compValueSecond, si, out difference))
@@ -108,13 +112,6 @@ namespace ChartControls
 							this.mChart.Series[si].Points.Add(dpoint);
 						}
 					}
-
-					if (ValidationComparison(compValueFirst, compValueSecond, Data.PrimaryYPointIndex, out difference))
-						PointSetLabel(datapoint, string.Format("{0}*", difference.ToString(srxp.YPointFormat)));
-					else if (srxp.EnablePointLabel && yValue > 0)
-						PointSetLabel(datapoint, string.Format("{0}{1}", yValue.ToString(srxp.YPointFormat), srxp.UnitOfMeasure));
-
-					primary.Points.Add(datapoint);
 				}
 				dpi++;
 			}

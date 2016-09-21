@@ -547,7 +547,7 @@ namespace ChartControls
 			this.cbChartView.SelectedIndex = 0;
 			pageFormatString = this.cbChartView.Items[cbChartView.SelectedIndex].ToString();
 
-			primarySeriesIdx = cData.PrimaryYPointIndex;
+			primarySeriesIdx = cData.PrimaryArrayIndex;
 			if (primarySeriesIdx > this.mChart.Series.Count - 1) // code will still bomb if no series
 				primarySeriesIdx = this.mChart.Series.Count - 1; // prevents out of range exception
 
