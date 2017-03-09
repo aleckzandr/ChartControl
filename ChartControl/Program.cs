@@ -17,11 +17,10 @@ namespace X
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
 
-			//Application.Run(new Test(GetData(ChartThemeStyle.Light)));
-			//Application.Run(new Test());
+			Application.Run(new ChartControls.Test(GetData(ChartThemeStyle.Light)));
+			//Application.Run(new ChartControls.Test());
+			//Application.Run(new ChartControls.TestChart());
 			//Application.Run(new ChartControls.TestForm(ChartThemeStyle.Light));
-
-			Application.Run(new ChartControls.TestChart());
 		}
 
 		/// <summary>
