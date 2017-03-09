@@ -4,16 +4,27 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms.DataVisualization.Charting;
 
-// TODO: Comment all classes, methods, and properties
 namespace X
 {
+	/// <summary>
+	/// A simple container for IPointData
+	/// </summary>
 	public interface IPointContainer
 	{
+		/// <summary>
+		/// Name of the container
+		/// </summary>
 		string Name { get; set; }
 
+		/// <summary>
+		/// The IPointData
+		/// </summary>
 		IPointData PointData { get; set; }
 	}
 
+	/// <summary>
+	/// Implements IPointContainer
+	/// </summary>
 	public class PointContainer : IPointContainer
 	{
 		public string Name { get; set; }
@@ -21,18 +32,31 @@ namespace X
 		public IPointData PointData { get; set; }
 	}
 
+	/// <summary>
+	/// Event Arguments for clicking on point data
+	/// </summary>
 	public class PointContainerArgs : EventArgs
 	{
 		private IPointContainer _pc;
 
+		/// <summary>
+		/// ctor
+		/// </summary>
+		/// <param name="pointContainer"></param>
 		public PointContainerArgs(IPointContainer pointContainer)
 		{
 			_pc = pointContainer;
 		}
 
+		/// <summary>
+		/// The point container
+		/// </summary>
 		public IPointContainer PointContainer { get { return _pc; } }
 	}
 
+	/// <summary>
+	/// Encapsulate point data of a graph
+	/// </summary>
 	public interface IPointData
 	{
 		/// <summary>
@@ -56,6 +80,9 @@ namespace X
 		object Bag { get; set; }
 	}
 
+	/// <summary>
+	/// Implements IPointData
+	/// </summary>
 	public class PointData : IPointData
 	{
 		/// <summary>
@@ -79,6 +106,9 @@ namespace X
 		public object Bag { get; set; }
 	}
 
+	/// <summary>
+	/// Encapsulate Chart data for System.Windows.Forms.DataVisualization.Charting.Chart GUI object
+	/// </summary>
 	public interface IChartData
 	{
 		IEnumerable<KeyValuePair<string, IPointData>> Points { get; set; }
@@ -109,7 +139,11 @@ namespace X
 
 		string TitleXAxis { get; set; }
 
+		string TitleSecondaryXAxis { get; set; }
+
 		string TitleYAxis { get; set; }
+
+		string TitleSecondaryYAxis { get; set; }
 
 		string SeriesNameComparisonOne { get; set; }
 
@@ -135,6 +169,10 @@ namespace X
 
 		double YAxisMaximum { get; set; }
 
+		double SecondaryYAxisMinimum { get; set; }
+
+		double SecondaryYAxisMaximum { get; set; }
+
 		bool IsYAxisUnitOfMeasureNegative { get; set; }
 
 		bool EnableValueLabels { get; set; }
@@ -143,11 +181,18 @@ namespace X
 
 		bool EnableLegend { get; set; }
 
+		bool EnableSecondYAxis { get; set; }
+
+		bool EnableSecondXAxis { get; set; }
+
 		IList<SILegendItem> LegendItems { get; set; }
 
 		IThemeChart Theme { get; set; }
 	}
 
+	/// <summary>
+	/// Implements IChartData
+	/// </summary>
 	public class ChartData : IChartData
 	{
 		#region instance
@@ -214,7 +259,11 @@ namespace X
 
 		public string TitleXAxis { get; set; }
 
+		public string TitleSecondaryXAxis { get; set; }
+
 		public string TitleYAxis { get; set; }
+
+		public string TitleSecondaryYAxis { get; set; }
 
 		public string SeriesNameComparisonOne { get; set; }
 
@@ -245,6 +294,10 @@ namespace X
 
 		public double YAxisMaximum { get; set; }
 
+		public double SecondaryYAxisMinimum { get; set; }
+
+		public double SecondaryYAxisMaximum { get; set; }
+
 		public bool IsYAxisUnitOfMeasureNegative { get; set; }
 
 		public bool EnableValueLabels { get; set; }
@@ -252,6 +305,10 @@ namespace X
 		public bool EnableYAxisStripLineLabels { get; set; }
 
 		public bool EnableLegend { get; set; }
+
+		public bool EnableSecondYAxis { get; set; }
+
+		public bool EnableSecondXAxis { get; set; }
 
 		private IList<SILegendItem> _legendItems;
 		public IList<SILegendItem> LegendItems
@@ -283,6 +340,7 @@ namespace X
 			var sz = new Series()
 			{
 				BorderWidth = isd.LineWidth > 0 ? isd.LineWidth : 1,
+				BorderDashStyle = isd.BorderDashStyle,
 				ChartArea = chartAreaName,
 				ChartType = isd.ChartType,
 				Color = isd.Color,
@@ -292,9 +350,13 @@ namespace X
 				LabelForeColor = isd.LabelForeColor,
 				Legend = chartData.EnableLegend && chartData.Theme.Legends.Count > isd.LegendIndex ? chartData.Theme.Legends[isd.LegendIndex].Name : null,
 				LegendText = isd.LegendText,
+				MarkerStyle = isd.MarkerStyle,
+				MarkerSize = isd.MarkerSize,
 				Name = isd.Name,
 				XValueType = isd.ValueTypeX,
-				YValueType = isd.ValueTypeY
+				YValueType = isd.ValueTypeY,
+				XAxisType = isd.XAxisType,
+				YAxisType = isd.YAxisType
 			};
 
 			return sz;
@@ -660,24 +722,25 @@ namespace X
 		}
 
 		/// <summary>
-		/// Method to bind data to a chart control
+		/// Method to bind data to a chart control. This throws exception if data or pChart is null
 		/// </summary>
 		/// <param name="data"></param>
 		/// <param name="pChart"></param>
 		public static void Bind(IChartData data, Chart pChart, bool enableXAxisCursor = false, bool enableYAxisCursor = false) // if data.Points is null this method bombs, which we want
 		{
+			if (data.Series.Count < 1)
+				return;
+
 			pChart.Legends.Clear();
 			pChart.Series.Clear();
 
-			var pointData = data.Sorts != null && data.Sorts.Count > 0 ? data.Sort(data.Points, data.Sorts.ToArray()) : data.Points;
+			var pointData = data.Sorts != null && data.Sorts.Any() ? data.Sort(data.Points, data.Sorts.ToArray()) : data.Points;
 
 			#region Chart Area initialization, cursors, and theme/color stuff
 			ChartArea ca;
-			if (pChart.ChartAreas.Count > 0)
+			if (pChart.ChartAreas.Any())
 			{
 				ca = pChart.ChartAreas[0];
-				ca.AxisX.StripLines.Clear();
-				ca.AxisY.StripLines.Clear();
 			}
 			else
 			{
@@ -699,11 +762,18 @@ namespace X
 
 			#region Chart X-Axis
 
+			ca.AxisX2.Enabled = data.EnableSecondXAxis ? AxisEnabled.True : AxisEnabled.False;
+
 			ca.AxisX.StripLines.Clear();
+			ca.AxisX2.StripLines.Clear();
+			ca.AxisX.CustomLabels.Clear();
+			ca.AxisX2.CustomLabels.Clear();
+
 			ca.CursorX.IsUserEnabled = enableXAxisCursor;
 			ca.CursorX.IsUserSelectionEnabled = enableXAxisCursor;
 			ca.CursorX.LineWidth = data.Theme.XAxis.StripLineBorderWidth;
 			ca.CursorX.SelectionColor = data.Theme.XAxis.StripLineBorderColor;
+			//ca.CursorX.SetSelectionPosition(double.NaN, double.NaN); // doesn't reset chart ?! https://msdn.microsoft.com/en-us/library/system.windows.forms.datavisualization.charting.cursor.selectionend(v=vs.110).aspx
 
 			ca.AxisX.Interval = data.XAxisInterval;
 			ca.AxisX.IsReversed = data.XAxisIsReversed;
@@ -720,24 +790,44 @@ namespace X
 			ca.AxisX.MajorTickMark.Enabled = data.Theme.XAxis.MajorTickMarkEnabled;
 			ca.AxisX.MajorTickMark.LineColor = data.Theme.XAxis.MajorTickMarkColor;
 
+			ca.AxisX2.Title = data.TitleSecondaryXAxis ?? ca.AxisX2.Title;
+			if (data.Theme.XAxis.LabelStyleFormatSecondaryAxis != null)
+				ca.AxisX2.LabelStyle.Format = data.Theme.XAxis.LabelStyleFormatSecondaryAxis;
+			ca.AxisX2.MajorGrid.LineColor = data.Theme.XAxis.MajorGridLineColorSecondAxis;
+			
 			#endregion
 
 			#region Chart Y-Axis
 
+			ca.AxisY2.Enabled = data.EnableSecondYAxis ? AxisEnabled.True : AxisEnabled.False;
+
 			ca.AxisY.StripLines.Clear();
+			ca.AxisY2.StripLines.Clear();
+			ca.AxisY.CustomLabels.Clear();
+			ca.AxisY2.CustomLabels.Clear();
+
 			ca.CursorY.IsUserEnabled = enableYAxisCursor;
 			ca.CursorY.IsUserSelectionEnabled = enableYAxisCursor;
 			ca.CursorY.LineWidth = data.Theme.YAxis.StripLineBorderWidth;
 			ca.CursorY.SelectionColor = data.Theme.YAxis.StripLineBorderColor;
+			//ca.CursorY.SetSelectionPosition(double.NaN, double.NaN);
 
 			if (data.YAxisMinimum > 0)
 			{
-				ca.AxisY.IsStartedFromZero = ca.AxisY2.IsStartedFromZero = false;
-				ca.AxisY.Minimum = ca.AxisY2.Minimum = data.YAxisMinimum;
+				ca.AxisY.IsStartedFromZero = false;
+				ca.AxisY.Minimum = data.YAxisMinimum; // todo: check logic scenarios
 			}
 
 			if (data.YAxisMaximum > 0)
-				ca.AxisY.Maximum = ca.AxisY2.Maximum = data.YAxisMaximum;
+				ca.AxisY.Maximum = data.YAxisMaximum;
+
+			if (data.SecondaryYAxisMinimum > 0)
+				ca.AxisY2.IsStartedFromZero = false;
+
+			ca.AxisY2.Minimum = data.SecondaryYAxisMinimum; // todo: check logic scenarios
+
+			if (data.SecondaryYAxisMaximum > 0)
+				ca.AxisY2.Maximum = data.SecondaryYAxisMaximum;
 
 			ca.AxisY.Title = data.TitleYAxis ?? ca.AxisY.Title;
 			ca.AxisY.TitleFont = ca.AxisY2.TitleFont = data.Theme.YAxis.TitleFont;
@@ -747,9 +837,14 @@ namespace X
 			if (data.Theme.YAxis.LabelStyleFormat != null)
 				ca.AxisY.LabelStyle.Format = data.Theme.YAxis.LabelStyleFormat;
 			ca.AxisY.LineColor = ca.AxisY2.LineColor = data.Theme.YAxis.LineColor;
-			ca.AxisY.MajorGrid.LineColor = ca.AxisY2.MajorGrid.LineColor = data.Theme.YAxis.MajorGridLineColor;
+			ca.AxisY.MajorGrid.LineColor = data.Theme.YAxis.MajorGridLineColor;
 			ca.AxisY.MajorTickMark.Enabled = ca.AxisY2.MajorTickMark.Enabled = data.Theme.YAxis.MajorTickMarkEnabled;
 			ca.AxisY.MajorTickMark.LineColor = ca.AxisY2.MajorTickMark.LineColor = data.Theme.YAxis.MajorTickMarkColor;
+
+			ca.AxisY2.Title = data.TitleSecondaryYAxis ?? ca.AxisY2.Title;
+			if (data.Theme.YAxis.LabelStyleFormatSecondaryAxis != null)
+				ca.AxisY2.LabelStyle.Format = data.Theme.YAxis.LabelStyleFormatSecondaryAxis;
+			ca.AxisY2.MajorGrid.LineColor = data.Theme.YAxis.MajorGridLineColorSecondAxis;
 
 			#endregion
 
@@ -805,6 +900,7 @@ namespace X
 						Font = lg.Font,
 						ForeColor = lg.ForeColor,
 						IsTextAutoFit = lg.IsTextAutoFit,
+						TextWrapThreshold = lg.TextWrapThreshold,
 						LegendItemOrder = lg.LegendItemOrder,
 						LegendStyle = lg.LegendStyle,
 						MaximumAutoSize = lg.MaximumAutoSize,
@@ -834,12 +930,17 @@ namespace X
 						BorderWidth = stripLine.Width,
 						ForeColor = stripLine.ForeColor,
 						IntervalOffset = stripLine.StripLineValue,
-						ToolTip = string.Format("{0} {1}", stripLine.StripLineValue, data.YAxisUnitOfMeasure) // stripLine.ToolTip
+						ToolTip = string.Format("{0}{1}{2}", (data.IsYAxisUnitOfMeasureNegative ? "-" : ""), stripLine.StripLineValue, data.YAxisUnitOfMeasure) // stripLine.ToolTip
 					});
 
 					if (data.EnableYAxisStripLineLabels)
 					{
-						ca.AxisY2.Enabled = AxisEnabled.True;
+						ca.AxisY2.Enabled = AxisEnabled.True; // forced
+						ca.AxisY2.Maximum = ca.AxisY.Maximum;
+						ca.AxisY2.Minimum = ca.AxisY.Minimum;
+						ca.AxisY2.LabelAutoFitMinFontSize = 8;
+						ca.AxisY2.LabelAutoFitStyle = LabelAutoFitStyles.None; // important, otherwise 2nd label may be offset
+						ca.AxisY2.LabelStyle = new LabelStyle() { Font = new Font(data.Theme.SeriesFont, FontStyle.Bold) };
 						ca.AxisY2.CustomLabels.Add(new CustomLabel()
 						{
 							ForeColor = stripLine.ForeColor,
@@ -875,7 +976,8 @@ namespace X
 					{
 						AxisLabel = kvp.Key,
 						Tag = new PointContainer() { Name = kvp.Key, PointData = kvp.Value },
-						ToolTip = string.Format("{0}: {1}{2}", srs.Name, yValue.ToString(srs.YPointFormat), srs.UnitOfMeasure)
+						ToolTip = string.Format("{0}: {1}{2}", srs.Name, yValue.ToString(srs.YPointFormat), srs.UnitOfMeasure),
+						Label = srs.EnablePointLabel ? string.Format("{0}{1}", yValue.ToString(srs.YPointFormat), srs.UnitOfMeasure) : null
 					});
 
 					for (int si = 0; si < pChart.Series.Count; si++)
@@ -890,7 +992,8 @@ namespace X
 
 							pChart.Series[si].Points.Add(new DataPoint(dpi, jValue)
 							{
-								ToolTip = string.Format("{0}: {1}{2}", srx.Name, jValue.ToString(srx.YPointFormat), srx.UnitOfMeasure)
+								ToolTip = string.Format("{0}: {1}{2}", srx.Name, jValue.ToString(srx.YPointFormat), srx.UnitOfMeasure),
+								Label = srx.EnablePointLabel ? string.Format("{0}{1}", jValue.ToString(srx.YPointFormat), srx.UnitOfMeasure) : null
 							});
 						}
 					}
@@ -904,6 +1007,9 @@ namespace X
 
 	#region Themes, Styles, Fonts, etc.
 
+	/// <summary>
+	/// Encapsulates themes for a chart: colors (gradients), fonts, etc.
+	/// </summary>
 	public interface IThemeChart
 	{
 		ChartThemeStyle Style { get; set; }
@@ -953,6 +1059,9 @@ namespace X
 		IList<IThemeLegend> Legends { get; set; }
 	}
 
+	/// <summary>
+	/// Implements IThemeChart
+	/// </summary>
 	public class ThemeChart : IThemeChart
 	{
 		public ThemeChart() : this (ChartThemeStyle.Dark) { }
@@ -997,6 +1106,7 @@ namespace X
 						LabelStyleForeColor = this.ForeColor,
 						LineColor = this.ForeColor,
 						MajorGridLineColor = Color.Silver,
+						MajorGridLineColorSecondAxis = Color.Silver,
 						MajorTickMarkLineColor = Color.Transparent,
 						ChartDashStyle = ChartDashStyle.NotSet,
 						TitleForeColor = this.ForeColor,
@@ -1016,6 +1126,7 @@ namespace X
 						LabelStyleForeColor = this.ForeColor,
 						LineColor = this.ForeColor,
 						MajorGridLineColor = Color.Silver,
+						MajorGridLineColorSecondAxis = Color.Silver,
 						MajorTickMarkLineColor = this.ForeColor,
 						TitleForeColor = this.ForeColor,
 						ChartDashStyle = ChartDashStyle.Dash,
@@ -1107,6 +1218,7 @@ namespace X
 						LabelStyleForeColor = this.ForeColor,
 						LineColor = this.ControlBorderColor,
 						MajorGridLineColor = Color.FromArgb(84, 64, 70),
+						MajorGridLineColorSecondAxis = Color.FromArgb(84, 64, 70),
 						MajorTickMarkLineColor = Color.Transparent,
 						ChartDashStyle = ChartDashStyle.NotSet,
 						TitleForeColor = this.ForeColor,
@@ -1126,6 +1238,7 @@ namespace X
 						LabelStyleForeColor = this.ForeColor,
 						LineColor = this.ControlBorderColor,
 						MajorGridLineColor = Color.FromArgb(84, 64, 70),
+						MajorGridLineColorSecondAxis = Color.FromArgb(84, 64, 70),
 						MajorTickMarkLineColor = Color.Empty,
 						TitleForeColor = this.ForeColor,
 						ChartDashStyle = ChartDashStyle.NotSet, //.Solid ??
@@ -1249,9 +1362,13 @@ namespace X
 
 		string LabelStyleFormat { get; set; }
 
+		string LabelStyleFormatSecondaryAxis { get; set; }
+
 		Color LineColor { get; set; }
 
 		Color MajorGridLineColor { get; set; }
+
+		Color MajorGridLineColorSecondAxis { get; set; }
 
 		Color MajorTickMarkLineColor { get; set; }
 
@@ -1288,9 +1405,13 @@ namespace X
 
 		public string LabelStyleFormat { get; set; }
 
+		public string LabelStyleFormatSecondaryAxis { get; set; }
+
 		public Color LineColor { get; set; }
 
 		public Color MajorGridLineColor { get; set; }
+
+		public Color MajorGridLineColorSecondAxis { get; set; }
 
 		public Color MajorTickMarkLineColor { get; set; }
 
@@ -1340,6 +1461,8 @@ namespace X
 		string Name { get; set; }
 
 		ElementPosition Position { get; set; }
+
+		int TextWrapThreshold { get; set; }
 	}
 
 	public class ThemeLegend: IThemeLegend
@@ -1365,6 +1488,8 @@ namespace X
 		public string Name { get; set; }
 
 		public ElementPosition Position { get; set; }
+
+		public int TextWrapThreshold { get; set; }
 	}
 
 	public interface IThemeTitle
@@ -1410,6 +1535,9 @@ namespace X
 
 	#endregion
 
+	/// <summary>
+	/// Encapsulates custom data for strip lines in graph
+	/// </summary>
 	public interface IStripLineContainer
 	{
 		double StripLineValue { get; set; }
@@ -1425,6 +1553,9 @@ namespace X
 		//string ToolTip { get; set; }
 	}
 
+	/// <summary>
+	/// Implements IStripLineContainer
+	/// </summary>
 	public class StripLineContainer : IStripLineContainer
 	{
 		public double StripLineValue { get; set; }
@@ -1440,6 +1571,9 @@ namespace X
 		//public string ToolTip { get; set; }
 	}
 
+	/// <summary>
+	/// Encapsulates Chart Series specific data: simple text, colors and styles
+	/// </summary>
 	public interface ISeriesData
 	{
 		string Name { get; set; }
@@ -1466,18 +1600,33 @@ namespace X
 
 		SeriesChartType ChartType { get; set; }
 
+		ChartDashStyle BorderDashStyle { get; set; }
+
+		MarkerStyle MarkerStyle { get; set; }
+
+		int MarkerSize { get; set; }
+
 		ChartValueType ValueTypeX { get; set; }
 
 		ChartValueType ValueTypeY { get; set; }
 
+		AxisType XAxisType { get; set; }
+
+		AxisType YAxisType { get; set; }
+
 		string CustomProperties { get; set; }
 	}
 
+	/// <summary>
+	/// Implements ISeriesData
+	/// </summary>
 	public class SeriesData : ISeriesData
 	{
 		public SeriesData()
 		{
 			this.EnableSort = true;
+			this.XAxisType = AxisType.Primary;
+			this.YAxisType = AxisType.Primary;
 		}
 
 		public string Name { get; set; }
@@ -1504,13 +1653,26 @@ namespace X
 
 		public SeriesChartType ChartType { get; set; }
 
+		public ChartDashStyle BorderDashStyle { get; set; }
+
+		public MarkerStyle MarkerStyle { get; set; }
+
+		public int MarkerSize { get; set; }
+
 		public ChartValueType ValueTypeX { get; set; }
 
 		public ChartValueType ValueTypeY { get; set; }
 
+		public AxisType XAxisType { get; set; }
+
+		public AxisType YAxisType { get; set; }
+
 		public string CustomProperties { get; set; }
 	}
 
+	/// <summary>
+	/// Custom LegendItem
+	/// </summary>
 	public class SILegendItem : LegendItem
 	{
 		public int LegendIndex { get; set; }
