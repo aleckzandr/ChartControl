@@ -1,11 +1,12 @@
 # ChartControl
 
-A windows executable demo that can with simple data interface that can shows interactive charts.
+A windows executable demo that with a simple data interface that can show interactive charts and graphs.
+
+This executable is a demo, but the code has working libraries.
 
 ## Screen shot
 
 ![screen shot](screenshot.jpg "ChartControl screen shot")
-
 
 ### Prerequisites
 
