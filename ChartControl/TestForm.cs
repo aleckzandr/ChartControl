@@ -5,6 +5,8 @@ namespace ChartControls
 {
 	public partial class TestForm : ChartForm
 	{
+		private const int chartDataSize = 42;
+
 		/// <summary>
 		/// ctor
 		/// </summary>
@@ -36,8 +38,6 @@ namespace ChartControls
 			chartControlLabel1.Data = data;
 			chartControlLabel2.Data = data;
 			chartControlLabel3.Data = data;
-
-			//Note: chartControlSimple1.Data and chartControlSimple2.Data set in Form_OnPointSelected
 		}
 
 		#region helpers
@@ -124,8 +124,13 @@ namespace ChartControls
 			chartControlLabel3.labelTwo.Text = "Fine - 2";
 
 			// Sub charts -- pass PointData.ID or something out of PointData.Bag here for future
-			ChartData.Bind(ChartData.GetTestAmperageData(42, chartControlComplete1.Data.Theme.Style), chartControlSimple1.mChart);
-			ChartData.Bind(ChartData.GetTestOhmData(42, chartControlComplete1.Data.Theme.Style), chartControlSimple2.mChart);
+			var ampData = ChartData.GetTestAmperageData(chartDataSize, chartControlComplete1.Data.Theme.Style); //this.chartContainerControl1.gbTitle.Text = Data.TitleControl;
+			ChartData.Bind(ampData, chartControlSimple1.mChart);
+			chartControlSimple1.chartContainerControl1.gbTitle.Text = ampData.TitleControl;
+
+			var ohmData = ChartData.GetTestOhmData(chartDataSize, chartControlComplete1.Data.Theme.Style);
+			ChartData.Bind(ohmData, chartControlSimple2.mChart);
+			chartControlSimple2.chartContainerControl1.gbTitle.Text = ohmData.TitleControl;
 		}
 
 		private void TestForm_Load(object sender, System.EventArgs e)
