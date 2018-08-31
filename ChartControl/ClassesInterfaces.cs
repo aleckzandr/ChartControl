@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms.DataVisualization.Charting;
 
-namespace X
+namespace ChartHelper
 {
 	/// <summary>
 	/// A simple container for IPointData
@@ -344,7 +344,7 @@ namespace X
 				ChartArea = chartAreaName,
 				ChartType = isd.ChartType,
 				Color = isd.Color,
-				CustomProperties = isd.CustomProperties != null ? isd.CustomProperties : chartData.CustomProperties != null ? chartData.CustomProperties : customProperties, // allow empty string
+				CustomProperties = isd.CustomProperties ?? chartData.CustomProperties ?? customProperties, // allow empty string
 				Enabled = !isd.RequiresUserSelection,
 				Font = chartData.Theme.SeriesFont,
 				LabelForeColor = isd.LabelForeColor,
@@ -362,7 +362,7 @@ namespace X
 			return sz;
 		}
 
-		public static Dictionary<string, IPointData> GetRandomPointData(int numOfRecords, IList<ISeriesData> seriesData, string pointFormat = "TS # ")
+		public static Dictionary<string, IPointData> GetRandomPointData(int numOfRecords, IList<ISeriesData> seriesData, string pointFormat = "TS #")
 		{
 			//Int32.MaxValue; // 2,147,483,647
 			var rnd = new Random();
@@ -455,14 +455,16 @@ namespace X
 				, new SeriesData()
 				{
 					Name = "Polarization",
+					BorderDashStyle = ChartDashStyle.Solid,
 					ChartType = SeriesChartType.Line,
 					Color = Color.FromArgb(220, 100, 10), //Color.DarkOrange
+					EnablePointLabel = false,
 					EnableSort = true,
 					LabelForeColor = theme.ForeColor,
 					LegendText = "Polarization *",
 					YPointFormat = "0",
 					UnitOfMeasure = " mV",
-					LegendIndex = 1,
+					LegendIndex = 1, // new Legend
 					LineWidth = 1,
 					RequiresUserSelection = true,
 					ValueTypeX = ChartValueType.String,
@@ -532,16 +534,16 @@ namespace X
 			};
 
 			// Add custom legend items here:
-			cd.LegendItems.Add(new SILegendItem()
-			{
-				BorderColor = Color.Empty,
-				BorderDashStyle = ChartDashStyle.DashDotDot,
-				BorderWidth = 3,
-				Color = Color.Fuchsia,
-				ImageStyle = LegendImageStyle.Line,
-				Name = "Cuztom",
-				LegendIndex = 0
-			});
+			//cd.LegendItems.Add(new SILegendItem()
+			//{
+			//	BorderColor = Color.Empty,
+			//	BorderDashStyle = ChartDashStyle.DashDotDot,
+			//	BorderWidth = 3,
+			//	Color = Color.Fuchsia,
+			//	ImageStyle = LegendImageStyle.Line,
+			//	Name = "Custom",
+			//	LegendIndex = 0
+			//});
 
 			return cd;
 		}
@@ -556,6 +558,7 @@ namespace X
 				new SeriesData()
 				{
 					Name = "Amperage",
+					BorderDashStyle = ChartDashStyle.Solid,
 					ChartType = SeriesChartType.Line,
 					Color = Color.FromArgb(90, 120, 48), // (20, 220, 20), //(146, 215, 79), //(52, 88, 48),  //(90, 120, 48),
 					EnablePointLabel = false,
@@ -651,6 +654,7 @@ namespace X
 				new SeriesData()
 				{
 					Name = "Ohms",
+					BorderDashStyle = ChartDashStyle.Solid,
 					ChartType = SeriesChartType.Line,
 					Color = Color.FromArgb(90, 120, 48), // (20, 220, 20), //(146, 215, 79), //(52, 88, 48),  //(90, 120, 48),
 					EnablePointLabel = false,
@@ -669,6 +673,7 @@ namespace X
 			#region Points
 			var rnd = new Random();
 			var dict = new Dictionary<string, IPointData>();
+			//var omz = seriesList.Select((sd, idx) => sd.Name.Equals("Ohms", StringComparison.CurrentCultureIgnoreCase) ? idx : -1).Where(i => i != -1).ToArray();
 			//string[] sNames = seriesList.Select(sd => sd.Name).ToArray();
 			DateTime start = new DateTime(2012, 7, 1);
 			for (int i = 0; i < numOfRecords; i++)
@@ -855,38 +860,39 @@ namespace X
 			if (!string.IsNullOrEmpty(data.TitleChart) && tlCount > 0)
 			{
 				var mainTitle = data.Theme.Titles[0];
-				pChart.Titles.Add(new Title()
-				{
-					Docking = mainTitle.Docking,
-					IsDockedInsideChartArea = mainTitle.IsDockedInsideChartArea,
-					DockedToChartArea = ca.Name,
-					Font = mainTitle.Font,
-					ForeColor = mainTitle.Color,
-					Position = mainTitle.Position,
-					Name = mainTitle.Name,
-					Text = data.TitleChart
-				});
+				if (!pChart.Titles.Any(t => t.Name.Equals(mainTitle.Name, StringComparison.CurrentCultureIgnoreCase)))
+					pChart.Titles.Add(new Title()
+					{
+						Docking = mainTitle.Docking,
+						IsDockedInsideChartArea = mainTitle.IsDockedInsideChartArea,
+						DockedToChartArea = ca.Name,
+						Font = mainTitle.Font,
+						ForeColor = mainTitle.Color,
+						Position = mainTitle.Position,
+						Name = mainTitle.Name,
+						Text = data.TitleChart
+					});
 			}
 
 			if (!string.IsNullOrEmpty(data.TitleChart2) && tlCount > 1)
 			{
 				var subTitle = data.Theme.Titles[1];
-				pChart.Titles.Add(new Title()
-				{
-					Docking = subTitle.Docking,
-					IsDockedInsideChartArea = subTitle.IsDockedInsideChartArea,
-					DockedToChartArea = ca.Name,
-					Font = subTitle.Font,
-					ForeColor = subTitle.Color,
-					Position = subTitle.Position,
-					Name = subTitle.Name,
-					Text = data.TitleChart2
-				});
+				if (!pChart.Titles.Any(t => t.Name.Equals(subTitle.Name, StringComparison.CurrentCultureIgnoreCase)))
+					pChart.Titles.Add(new Title()
+					{
+						Docking = subTitle.Docking,
+						IsDockedInsideChartArea = subTitle.IsDockedInsideChartArea,
+						DockedToChartArea = ca.Name,
+						Font = subTitle.Font,
+						ForeColor = subTitle.Color,
+						Position = subTitle.Position,
+						Name = subTitle.Name,
+						Text = data.TitleChart2
+					});
 			}
 			#endregion
 
-			#region Chart Legends (note: 
-			// this must be done before Series
+			#region Chart Legends (note: this must be done before Series)
 			if (data.EnableLegend)
 			{
 				int lgdIdx = 0;
@@ -990,6 +996,7 @@ namespace X
 							double jValue = kvp.Value.Values[si];
 							var srx = data.Series.ElementAt(si);
 
+							// Add the point on the series
 							pChart.Series[si].Points.Add(new DataPoint(dpi, jValue)
 							{
 								ToolTip = string.Format("{0}: {1}{2}", srx.Name, jValue.ToString(srx.YPointFormat), srx.UnitOfMeasure),

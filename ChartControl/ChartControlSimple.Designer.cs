@@ -59,6 +59,7 @@
 			this.mChart.Name = "mChart";
 			series1.ChartArea = "Main";
 			series1.Name = "Series1";
+			//series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
 			this.mChart.Series.Add(series1);
 			this.mChart.Size = new System.Drawing.Size(571, 191);
 			this.mChart.TabIndex = 1;
@@ -73,7 +74,6 @@
 			this.Controls.Add(this.chartContainerControl1);
 			this.Name = "ChartControlSimple";
 			this.Size = new System.Drawing.Size(577, 227);
-			this.Load += new System.EventHandler(this.ChartControlSimple_Load);
 			((System.ComponentModel.ISupportInitialize)(this.mChart)).EndInit();
 			this.ResumeLayout(false);
 
@@ -81,7 +81,7 @@
 
 		#endregion
 
-		private ChartControls.ChartContainerControl chartContainerControl1;
-		private System.Windows.Forms.DataVisualization.Charting.Chart mChart;
+		internal ChartControls.ChartContainerControl chartContainerControl1;
+		internal System.Windows.Forms.DataVisualization.Charting.Chart mChart;
 	}
 }

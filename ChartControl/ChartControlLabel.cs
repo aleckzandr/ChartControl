@@ -1,5 +1,5 @@
 ﻿using System.Windows.Forms;
-using X;
+using ChartHelper;
 
 namespace ChartControls
 {
@@ -18,7 +18,7 @@ namespace ChartControls
 			{
 #if DEBUG && TESTDATA
 				if (_data == null)
-					_data = X.ChartData.GetTestSurveyData(25); // if data is null set it to Test Data with 25 random points
+					_data = ChartData.GetTestSurveyData(25); // if data is null set it to Test Data with 25 random points
 #endif
 				return _data;
 			}

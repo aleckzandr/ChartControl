@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms.DataVisualization.Charting;
-using X;
+using ChartHelper;
 
 namespace ChartControls
 {
@@ -14,8 +14,8 @@ namespace ChartControls
 		/// <summary>
 		/// Constructor with IChartData param
 		/// </summary>
-		/// <param name="data"></param>
-		public Test(IChartData data)
+		/// <param name="pData"></param>
+		public Test(IChartData pData)
 		{
 			InitializeComponent();
 
@@ -23,11 +23,12 @@ namespace ChartControls
 				ca = this.mChart.ChartAreas[0];
 			else
 			{
+				//this.mChart.ChartAreas.Clear();
 				ca = new ChartArea("Main");
 				this.mChart.ChartAreas.Add(ca);
 			}
 
-			cData = data ?? ChartData.GetTestSurveyData(479); // if data is null set it to Test Data with 479 random points
+			Data = pData ?? ChartData.GetTestSurveyData(479); // if data is null set it to Test Data with 479 random points
 		}
 
 		#region fields and props
@@ -100,8 +101,8 @@ namespace ChartControls
 			set { _chartDescription = value; }
 		}
 
-		private IChartData cData;
-		private IEnumerable<KeyValuePair<string, IPointData>> oList;
+		private IChartData Data;
+		//private IEnumerable<KeyValuePair<string, IPointData>> oList;
 		private IList<Func<KeyValuePair<string, IPointData>, object>> defaultSorts;
 		private bool[] defaultDescendingOrderBys;
 
@@ -118,7 +119,7 @@ namespace ChartControls
 			//highestValue = double.MinValue;
 			pts = 0;
 			// find min and max for primary series, this is very fast, < 1 second for 65k points and checking maxValue too
-			foreach (var kvp in cData.Points)
+			foreach (var kvp in Data.Points)
 			{
 				pts++;
 				if (kvp.Value == null || kvp.Value.Values == null || kvp.Value.Values.Length == 0)
@@ -135,7 +136,7 @@ namespace ChartControls
 
 		private void Bind() // if cData.Points is null this bombs, which we want
 		{
-			oList = cData.Sorts != null && cData.Sorts.Count > 0 ? cData.Sort(cData.Points, cData.Sorts.ToArray()) : cData.Points;
+			var oList = Data.Sorts != null && Data.Sorts.Count > 0 ? Data.Sort(Data.Points, Data.Sorts.ToArray()) : Data.Points;
 
 			if (pageSize > 0)
 				oList = oList.Skip(pageIdx * pageSize).Take(pageSize);
@@ -160,7 +161,7 @@ namespace ChartControls
 					if (yValue == lowestValue) // possible precision check failure
 						lowestValueIdx.Add(dpi);
 
-					var srxp = cData.Series.ElementAt(primarySeriesIdx);
+					var srxp = Data.Series.ElementAt(primarySeriesIdx);
 
 					string sName = srxp.Name; // again, potential out of range // kvp.Value.Names.ElementAt(primarySeriesIdx);
 
@@ -168,9 +169,9 @@ namespace ChartControls
 					double compValueFirst = 0d;
 					double difference = 0d;
 
-					if (sName.Equals(cData.SeriesNameComparisonOne, StringComparison.CurrentCultureIgnoreCase))
+					if (sName.Equals(Data.SeriesNameComparisonOne, StringComparison.CurrentCultureIgnoreCase))
 						compValueFirst = yValue;
-					else if (sName.Equals(cData.SeriesNameComparisonTwo, StringComparison.CurrentCultureIgnoreCase))
+					else if (sName.Equals(Data.SeriesNameComparisonTwo, StringComparison.CurrentCultureIgnoreCase))
 						compValueSecond = yValue;
 
 					var datapoint = new DataPoint(dpi, yValue)
@@ -188,12 +189,12 @@ namespace ChartControls
 						if (kvp.Value.Values.Length > si)
 						{
 							double jValue = kvp.Value.Values[si];
-							var srx = cData.Series.ElementAt(si);
+							var srx = Data.Series.ElementAt(si);
 							sName = srx.Name; // kvp.Value.Names.ElementAt(si);
 
-							if (sName.Equals(cData.SeriesNameComparisonOne, StringComparison.CurrentCultureIgnoreCase))
+							if (sName.Equals(Data.SeriesNameComparisonOne, StringComparison.CurrentCultureIgnoreCase))
 								compValueFirst = jValue;
-							else if (sName.Equals(cData.SeriesNameComparisonTwo, StringComparison.CurrentCultureIgnoreCase))
+							else if (sName.Equals(Data.SeriesNameComparisonTwo, StringComparison.CurrentCultureIgnoreCase))
 								compValueSecond = jValue;
 
 							var dpoint = new DataPoint(dpi, jValue)
@@ -239,8 +240,8 @@ namespace ChartControls
 				ca.AxisX.StripLines.Add(new StripLine()
 				{
 					BorderColor = primary.Color,
-					BorderDashStyle = cData.Theme.XAxis.StripLineChartDashStyle,
-					BorderWidth = cData.Theme.XAxis.StripLineBorderWidth,
+					BorderDashStyle = Data.Theme.XAxis.StripLineChartDashStyle,
+					BorderWidth = Data.Theme.XAxis.StripLineBorderWidth,
 					IntervalOffset = lowestValueIdx[x]
 				});
 				if (x == 0)
@@ -284,7 +285,7 @@ namespace ChartControls
 
 		private void PointSetLabel(DataPoint datapoint, string txt)
 		{
-			if (cData.EnableValueLabels &&
+			if (Data.EnableValueLabels &&
 			    pageSize > 0 &&
 			    pageSize < labelPageSizeThreshold)
 			{
@@ -324,7 +325,7 @@ namespace ChartControls
 
 				string tagName = (container != null) ? container.Name : (pt.XValue + 1).ToString(); // TagName is a key to a Dictionary, it cannot be null
 
-				string srxName = cData.Series != null && cData.Series.Count > primarySeriesIdx ? cData.Series.ElementAt(primarySeriesIdx).Name : "";
+				string srxName = Data.Series != null && Data.Series.Count > primarySeriesIdx ? Data.Series.ElementAt(primarySeriesIdx).Name : "";
 
 				this.lDataSelected.Text = string.Format(formatT, tagName, srxName, pt.YValues[0]); // only one YValue per Series, so use 0 indexer
 
@@ -339,7 +340,7 @@ namespace ChartControls
 			if (difference < 0)
 				difference = 0;
 
-			return firstValue > 0 && secondValue > 0 && cData.Series.ElementAt(seriesIndex).Name.Equals(cData.SeriesNameForComparisonLabel, StringComparison.CurrentCultureIgnoreCase);
+			return firstValue > 0 && secondValue > 0 && Data.Series.ElementAt(seriesIndex).Name.Equals(Data.SeriesNameForComparisonLabel, StringComparison.CurrentCultureIgnoreCase);
 		}
 
 		private Series CreateSeries(ISeriesData isd)
@@ -352,9 +353,9 @@ namespace ChartControls
 				Color = isd.Color,
 				CustomProperties = seriesCustomProperties,
 				Enabled = !isd.RequiresUserSelection,
-				Font = cData.Theme.SeriesFont,
+				Font = Data.Theme.SeriesFont,
 				LabelForeColor = isd.LabelForeColor,
-				Legend = cData.EnableLegend && cData.Theme.Legends.Count > isd.LegendIndex ? this.mChart.Legends[isd.LegendIndex].Name : null,
+				Legend = Data.EnableLegend && Data.Theme.Legends.Count > isd.LegendIndex ? this.mChart.Legends[isd.LegendIndex].Name : null,
 				LegendText = isd.LegendText,
 				Name = isd.Name,
 				XValueType = isd.ValueTypeX,
@@ -368,13 +369,13 @@ namespace ChartControls
 
 		private void Form_Load(object sender, EventArgs e) // setup
 		{
-			this.gbContainer.Text = cData.TitleControl;
-			if (!string.IsNullOrEmpty(cData.ShowAllSeriesLabelText))
-				this.checkBoxShowUserSelection.Text = cData.ShowAllSeriesLabelText;
+			this.gbContainer.Text = Data.TitleControl;
+			if (!string.IsNullOrEmpty(Data.ShowAllSeriesLabelText))
+				this.checkBoxShowUserSelection.Text = Data.ShowAllSeriesLabelText;
 
 			#region Chart Color
-			this.panelChart.Color1 = cData.Theme.PanelColor1;
-			this.panelChart.Color2 = cData.Theme.PanelColor2;
+			this.panelChart.Color1 = Data.Theme.PanelColor1;
+			this.panelChart.Color2 = Data.Theme.PanelColor2;
 
 			this.lDataSelected.ForeColor =
 				this.lCountInformation.ForeColor = 
@@ -382,43 +383,43 @@ namespace ChartControls
 						this.lThenBy.ForeColor =
 							this.lPageInformation.ForeColor =
 								this.checkBoxShowUserSelection.ForeColor =
-									cData.Theme.ForeColor;
+									Data.Theme.ForeColor;
 
-			this.trackBar1.BackColor = cData.Theme.ControlBackColor1;
-			this.trackBar1.BorderColor = cData.Theme.ControlBorderColor;
+			this.trackBar1.BackColor = Data.Theme.ControlBackColor1;
+			this.trackBar1.BorderColor = Data.Theme.ControlBorderColor;
 
-			this.mChart.BackColor = cData.Theme.BackColor;
-			this.mChart.BackGradientStyle = cData.Theme.BackGradientStyle;
-			this.mChart.BackSecondaryColor = cData.Theme.BackSecondaryColor;
-			this.mChart.BorderlineColor = cData.Theme.BorderColor;
+			this.mChart.BackColor = Data.Theme.BackColor;
+			this.mChart.BackGradientStyle = Data.Theme.BackGradientStyle;
+			this.mChart.BackSecondaryColor = Data.Theme.BackSecondaryColor;
+			this.mChart.BorderlineColor = Data.Theme.BorderColor;
 			#endregion
 
 			#region Chart Titles
 			this.mChart.Titles.Clear();
-			var tlCount = cData.Theme.Titles.Count;
-			if (!string.IsNullOrEmpty(cData.TitleChart) && tlCount > 0)
+			var tlCount = Data.Theme.Titles.Count;
+			if (!string.IsNullOrEmpty(Data.TitleChart) && tlCount > 0)
 			{
 				this.mChart.Titles.Add(new Title()
 				{
-					Docking = cData.Theme.Titles[0].Docking,
-					Font = cData.Theme.Titles[0].Font,
-					ForeColor = cData.Theme.Titles[0].Color,
-					Position = cData.Theme.Titles[0].Position,
-					Name = cData.Theme.Titles[0].Name,
-					Text = cData.TitleChart
+					Docking = Data.Theme.Titles[0].Docking,
+					Font = Data.Theme.Titles[0].Font,
+					ForeColor = Data.Theme.Titles[0].Color,
+					Position = Data.Theme.Titles[0].Position,
+					Name = Data.Theme.Titles[0].Name,
+					Text = Data.TitleChart
 				});
 			}
 
-			if (!string.IsNullOrEmpty(cData.TitleChart2) && tlCount > 1)
+			if (!string.IsNullOrEmpty(Data.TitleChart2) && tlCount > 1)
 			{
 				this.mChart.Titles.Add(new Title()
 				{
-					Docking = cData.Theme.Titles[1].Docking,
-					Font = cData.Theme.Titles[1].Font,
-					ForeColor = cData.Theme.Titles[1].Color,
-					Position = cData.Theme.Titles[1].Position,
-					Name = cData.Theme.Titles[1].Name,
-					Text = cData.TitleChart2
+					Docking = Data.Theme.Titles[1].Docking,
+					Font = Data.Theme.Titles[1].Font,
+					ForeColor = Data.Theme.Titles[1].Color,
+					Position = Data.Theme.Titles[1].Position,
+					Name = Data.Theme.Titles[1].Name,
+					Text = Data.TitleChart2
 				});
 			}
 			#endregion
@@ -426,10 +427,10 @@ namespace ChartControls
 			#region Chart Legends
 			this.mChart.Legends.Clear();
 			// this must be done before Series
-			if (cData.EnableLegend)
+			if (Data.EnableLegend)
 			{
 				int lgdIdx = 0;
-				foreach (var lg in cData.Theme.Legends)
+				foreach (var lg in Data.Theme.Legends)
 				{
 					var lgd = new Legend()
 					{
@@ -446,8 +447,8 @@ namespace ChartControls
 						Position = lg.Position
 					};
 
-					if (cData.LegendItems != null)
-						foreach (var li in cData.LegendItems.Where(x => x.LegendIndex == lgdIdx))
+					if (Data.LegendItems != null)
+						foreach (var li in Data.LegendItems.Where(x => x.LegendIndex == lgdIdx))
 							lgd.CustomItems.Add(li);
 
 					this.mChart.Legends.Add(lgd);
@@ -458,68 +459,68 @@ namespace ChartControls
 
 			#region Chart Area
 
-			ca.BackColor = cData.Theme.AreaBackColor;
-			ca.BackGradientStyle = cData.Theme.AreaBackGradientStyle;
-			ca.BackSecondaryColor = cData.Theme.AreaBackSecondaryColor;
-			ca.BorderColor = cData.Theme.AreaBorderColor;
+			ca.BackColor = Data.Theme.AreaBackColor;
+			ca.BackGradientStyle = Data.Theme.AreaBackGradientStyle;
+			ca.BackSecondaryColor = Data.Theme.AreaBackSecondaryColor;
+			ca.BorderColor = Data.Theme.AreaBorderColor;
 			//ca.CursorX.IsUserEnabled = true;
 			//ca.CursorX.IsUserSelectionEnabled = true;
 			//ca.CursorX.LineWidth = 2;
 			//ca.CursorX.SelectionColor = Color.Blue;
 
 			#region Chart X-Axis
-			ca.AxisX.Title = cData.TitleXAxis;
-			ca.AxisX.Interval = cData.XAxisInterval;
+			ca.AxisX.Title = Data.TitleXAxis;
+			ca.AxisX.Interval = Data.XAxisInterval;
 
-			ca.AxisX.LabelStyle.ForeColor = cData.Theme.XAxis.LabelStyleForeColor;
-			ca.AxisX.LineColor = cData.Theme.XAxis.LineColor;
-			ca.AxisX.MajorGrid.LineColor = cData.Theme.XAxis.MajorGridLineColor;
-			ca.AxisX.MajorTickMark.Enabled = cData.Theme.XAxis.MajorTickMarkEnabled;
-			ca.AxisX.MajorTickMark.LineColor = cData.Theme.XAxis.MajorTickMarkColor;
-			ca.AxisX.TitleFont = cData.Theme.XAxis.TitleFont;
-			ca.AxisX.TitleForeColor = cData.Theme.XAxis.TitleForeColor;
+			ca.AxisX.LabelStyle.ForeColor = Data.Theme.XAxis.LabelStyleForeColor;
+			ca.AxisX.LineColor = Data.Theme.XAxis.LineColor;
+			ca.AxisX.MajorGrid.LineColor = Data.Theme.XAxis.MajorGridLineColor;
+			ca.AxisX.MajorTickMark.Enabled = Data.Theme.XAxis.MajorTickMarkEnabled;
+			ca.AxisX.MajorTickMark.LineColor = Data.Theme.XAxis.MajorTickMarkColor;
+			ca.AxisX.TitleFont = Data.Theme.XAxis.TitleFont;
+			ca.AxisX.TitleForeColor = Data.Theme.XAxis.TitleForeColor;
 
-			ca.AxisY.InterlacedColor = cData.Theme.YAxis.InterlacedColor;
-			ca.AxisY.LabelStyle.ForeColor = cData.Theme.YAxis.LabelStyleForeColor;
-			ca.AxisY.LineColor = cData.Theme.YAxis.LineColor;
-			ca.AxisY.MajorGrid.LineColor = cData.Theme.YAxis.MajorGridLineColor;
-			ca.AxisY.MajorTickMark.Enabled = cData.Theme.YAxis.MajorTickMarkEnabled;
-			ca.AxisY.MajorTickMark.LineColor = cData.Theme.YAxis.MajorTickMarkColor;
-			ca.AxisY.TitleFont = cData.Theme.YAxis.TitleFont;
-			ca.AxisY.TitleForeColor = cData.Theme.YAxis.TitleForeColor;
+			ca.AxisY.InterlacedColor = Data.Theme.YAxis.InterlacedColor;
+			ca.AxisY.LabelStyle.ForeColor = Data.Theme.YAxis.LabelStyleForeColor;
+			ca.AxisY.LineColor = Data.Theme.YAxis.LineColor;
+			ca.AxisY.MajorGrid.LineColor = Data.Theme.YAxis.MajorGridLineColor;
+			ca.AxisY.MajorTickMark.Enabled = Data.Theme.YAxis.MajorTickMarkEnabled;
+			ca.AxisY.MajorTickMark.LineColor = Data.Theme.YAxis.MajorTickMarkColor;
+			ca.AxisY.TitleFont = Data.Theme.YAxis.TitleFont;
+			ca.AxisY.TitleForeColor = Data.Theme.YAxis.TitleForeColor;
 			#endregion
 
 			#region Chart Y-Axis
-			ca.AxisY.Title = cData.TitleYAxis;
+			ca.AxisY.Title = Data.TitleYAxis;
 			#endregion
 
 			#region strip lines
 			ca.AxisY.StripLines.Clear();
 			ca.AxisY2.CustomLabels.Clear();
-			ca.AxisY2.Enabled = cData.EnableYAxisStripLineLabels ? AxisEnabled.True : AxisEnabled.False;
+			ca.AxisY2.Enabled = Data.EnableYAxisStripLineLabels ? AxisEnabled.True : AxisEnabled.False;
 
-			if (cData.StripLinesYAxis != null && cData.StripLinesYAxis.Any())
+			if (Data.StripLinesYAxis != null && Data.StripLinesYAxis.Any())
 			{
-				foreach (var strpValue in cData.StripLinesYAxis)
+				foreach (var strpValue in Data.StripLinesYAxis)
 				{
 					ca.AxisY.StripLines.Add(new StripLine()
 					{
 						BorderColor = strpValue.StripLineColor,
 						BorderDashStyle = strpValue.StripLineStyle,
-						BorderWidth = cData.Theme.YAxis.StripLineBorderWidth,
-						ForeColor = cData.Theme.YAxis.StripLineForeColor,
+						BorderWidth = Data.Theme.YAxis.StripLineBorderWidth,
+						ForeColor = Data.Theme.YAxis.StripLineForeColor,
 						IntervalOffset = strpValue.StripLineValue,
-						ToolTip = string.Format("{0} {1}", strpValue, cData.YAxisUnitOfMeasure)
+						ToolTip = string.Format("{0} {1}", strpValue, Data.YAxisUnitOfMeasure)
 					});
 
-					if (cData.EnableYAxisStripLineLabels)
+					if (Data.EnableYAxisStripLineLabels)
 					{
 						ca.AxisY2.CustomLabels.Add(new CustomLabel()
 						{
-							ForeColor = cData.Theme.YAxis.StripLineForeColor,
+							ForeColor = Data.Theme.YAxis.StripLineForeColor,
 							FromPosition = strpValue.StripLineValue - 10,
-							MarkColor = cData.Theme.YAxis.StripLineBorderColor,
-							Text = string.Format("{0}{1}{2}", (cData.IsYAxisUnitOfMeasureNegative ? "-" : ""), strpValue, cData.YAxisUnitOfMeasure),
+							MarkColor = Data.Theme.YAxis.StripLineBorderColor,
+							Text = string.Format("{0}{1}{2}", (Data.IsYAxisUnitOfMeasureNegative ? "-" : ""), strpValue.StripLineValue, Data.YAxisUnitOfMeasure),
 							ToPosition = strpValue.StripLineValue + 10
 						});
 					}
@@ -532,7 +533,7 @@ namespace ChartControls
 			#region Series
 			this.mChart.Series.Clear();
 			// Legends must be done first
-			foreach (var isd in cData.Series)
+			foreach (var isd in Data.Series)
 			{
 				if (isd.RequiresUserSelection)
 					checkBoxShowUserSelection.Visible = true;
@@ -542,23 +543,23 @@ namespace ChartControls
 			#endregion
 
 			countFormatString = !string.IsNullOrEmpty(lCountInformation.Text) ? lCountInformation.Text : "{0} - {1} of {2}";
-			lPageInformation.Text = !string.IsNullOrEmpty(cData.PagingText) ? cData.PagingText : chartDescription;
+			lPageInformation.Text = !string.IsNullOrEmpty(Data.PagingText) ? Data.PagingText : chartDescription;
 			//pageFormatString = !string.IsNullOrEmpty(lPageInformation.Text) ? lPageInformation.Text : chartDescription + " {0} of {1}";
 			this.cbChartView.SelectedIndex = 0;
 			pageFormatString = this.cbChartView.Items[cbChartView.SelectedIndex].ToString();
 
-			primarySeriesIdx = cData.PrimaryArrayIndex;
+			primarySeriesIdx = Data.PrimaryArrayIndex;
 			if (primarySeriesIdx > this.mChart.Series.Count - 1) // code will still bomb if no series
 				primarySeriesIdx = this.mChart.Series.Count - 1; // prevents out of range exception
 
-			defaultSorts = cData.Sorts;
-			defaultDescendingOrderBys = cData.DescendingOrderBys;
+			defaultSorts = Data.Sorts;
+			defaultDescendingOrderBys = Data.DescendingOrderBys;
 
 			PointsScan();
 	
-			if (cData.Series != null) // remove this if statement?
+			if (Data.Series != null) // remove this if statement?
 			{
-				var sortableSeries = cData.Series.Where(sr => sr.EnableSort &&
+				var sortableSeries = Data.Series.Where(sr => sr.EnableSort &&
 					(!sr.RequiresUserSelection || !checkBoxShowUserSelection.Visible || checkBoxShowUserSelection.Checked));
 
 				lSortBy.Visible = cbSortBy.Visible = sortableSeries.Any();
@@ -569,7 +570,7 @@ namespace ChartControls
 				}
 			}
 
-			int formPageSize = cData.PageSize < forcedPageSize ? cData.PageSize : forcedPageSize;
+			int formPageSize = Data.PageSize < forcedPageSize ? Data.PageSize : forcedPageSize;
 			if (pts > formPageSize) // if true, do paging
 			{
 				pageSize = formPageSize;
@@ -675,7 +676,7 @@ namespace ChartControls
 
 				int x = 0, z = 0;
 
-				foreach (ISeriesData sdx in cData.Series.Where(sr => sr.EnableSort &&
+				foreach (ISeriesData sdx in Data.Series.Where(sr => sr.EnableSort &&
 					(!sr.RequiresUserSelection || !checkBoxShowUserSelection.Visible || checkBoxShowUserSelection.Checked)))
 				{
 					if (!selected.StartsWith(sdx.Name))
@@ -693,9 +694,9 @@ namespace ChartControls
 
 				Func<KeyValuePair<string, IPointData>, object> asort = kvp => kvp.Value.Values[z];
 
-				cData.Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { asort };
+				Data.Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { asort };
 
-				cData.DescendingOrderBys = new bool[] { selected.EndsWith(descendingMark, StringComparison.CurrentCultureIgnoreCase) };
+				Data.DescendingOrderBys = new bool[] { selected.EndsWith(descendingMark, StringComparison.CurrentCultureIgnoreCase) };
 
 				pageIdx = 0;
 				Bind();
@@ -706,8 +707,8 @@ namespace ChartControls
 
 				if (sortRun)
 				{
-					cData.Sorts = defaultSorts;
-					cData.DescendingOrderBys = defaultDescendingOrderBys;
+					Data.Sorts = defaultSorts;
+					Data.DescendingOrderBys = defaultDescendingOrderBys;
 					pageIdx = 0;
 					Bind();
 				}
@@ -722,7 +723,7 @@ namespace ChartControls
 			{
 				int x = 0, z = 0;
 
-				foreach (ISeriesData sdx in cData.Series)
+				foreach (ISeriesData sdx in Data.Series)
 				{
 					if (selected.StartsWith(sdx.Name))
 					{
@@ -732,13 +733,13 @@ namespace ChartControls
 					x++;
 				}
 
-				Func<KeyValuePair<string, IPointData>, object> firstSort = cData.Sorts[0];
+				Func<KeyValuePair<string, IPointData>, object> firstSort = Data.Sorts[0];
 				Func<KeyValuePair<string, IPointData>, object> asort = kvp => kvp.Value.Values[z];
-				cData.Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { firstSort, asort };
+				Data.Sorts = new List<Func<KeyValuePair<string, IPointData>, object>>() { firstSort, asort };
 
-				cData.DescendingOrderBys = new bool[]
+				Data.DescendingOrderBys = new bool[]
 				{
-					cData.DescendingOrderBys[0],
+					Data.DescendingOrderBys[0],
 					selected.EndsWith(descendingMark, StringComparison.CurrentCultureIgnoreCase)
 				};
 
@@ -776,12 +777,12 @@ namespace ChartControls
 
 		private void checkBoxShowUserSelection_CheckedChanged(object sender, EventArgs e)
 		{
-			foreach (var isd in cData.Series.Where(sr => sr.RequiresUserSelection))
+			foreach (var isd in Data.Series.Where(sr => sr.RequiresUserSelection))
 				this.mChart.Series[isd.Name].Enabled = checkBoxShowUserSelection.Checked;
 
 			//cData.EnableValueLabels = checkBoxShowLineSeries.Checked;
 
-			var sortableSeries = cData.Series.Where(sr => sr.EnableSort &&
+			var sortableSeries = Data.Series.Where(sr => sr.EnableSort &&
 				(!sr.RequiresUserSelection || !checkBoxShowUserSelection.Visible || checkBoxShowUserSelection.Checked));
 
 			cbSortBy.Items.Clear();

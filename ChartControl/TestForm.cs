@@ -1,5 +1,5 @@
 ﻿using System;
-using X;
+using ChartHelper;
 
 namespace ChartControls
 {
@@ -17,7 +17,7 @@ namespace ChartControls
 			chartControlLabel3.chartContainerControl1.gbTitle.Text = "Tap Settings";
 
 			// Todo: Get Data for main dashboard chart
-			var data = ChartData.GetTestSurveyData(2479, theme);
+			var data = ChartData.GetTestSurveyData(249, theme);
 			data.PageSize = 40;
 
 			this.Color1 = data.Theme.PanelColor1; //.BackColor; // gradient colors
@@ -92,6 +92,8 @@ namespace ChartControls
 			var pc = e.PointContainer;
 			//pc.Name
 			//pc.PointData
+			//pc.PointData.Bag
+			//pc.PointData.ID
 
 			// Todo: Get Data based on the argument(point) given
 			// Voltage
@@ -100,6 +102,8 @@ namespace ChartControls
 			float gValue;
 			var vals = Regions(ratedValue, operValue, out gValue);
 			aGaugeControl1.Set(gValue, vals);
+
+			// Todo: Bind data to gauge control, labels, and sub charts
 
 			// Amperage
 			ratedValue = 24.0f;
@@ -119,17 +123,15 @@ namespace ChartControls
 			chartControlLabel3.labelOne.Text = "Coarse - 3";
 			chartControlLabel3.labelTwo.Text = "Fine - 2";
 
-			//Sub charts
-			chartControlSimple1.Data = ChartData.GetTestAmperageData(42, chartControlComplete1.Data.Theme.Style);
-			chartControlSimple1.Bind();
-
-			chartControlSimple2.Data = ChartData.GetTestOhmData(42, chartControlComplete1.Data.Theme.Style);
-			chartControlSimple2.Bind();
+			// Sub charts -- pass PointData.ID or something out of PointData.Bag here for future
+			ChartData.Bind(ChartData.GetTestAmperageData(42, chartControlComplete1.Data.Theme.Style), chartControlSimple1.mChart);
+			ChartData.Bind(ChartData.GetTestOhmData(42, chartControlComplete1.Data.Theme.Style), chartControlSimple2.mChart);
 		}
 
 		private void TestForm_Load(object sender, System.EventArgs e)
 		{
 			// all child control "loads" get called first
+			chartControlComplete1.PointSelected(0, chartControlComplete1.PrimarySeriesIdx); // select the first (zero based index), this will end up calling Form_OnPointSelected above
 		}
 		#endregion
 	}

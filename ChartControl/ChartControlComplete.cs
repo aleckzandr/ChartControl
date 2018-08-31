@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.Linq;
-using X;
+using ChartHelper;
 
 namespace ChartControls
 {
@@ -37,7 +37,7 @@ namespace ChartControls
 		private const int forcedPageSize = 2000; // anything larger the chart is too slow
 
 		private int _primarySeriesIdx = 0;
-		private int primarySeriesIdx
+		internal int PrimarySeriesIdx
 		{
 			get { return _primarySeriesIdx; }
 			set
@@ -108,7 +108,7 @@ namespace ChartControls
 			{
 #if DEBUG && TESTDATA
 				if (_data == null)
-					_data = X.ChartData.GetTestSurveyData(62479); // if data is null set it to Test Data with 62479 random points
+					_data = ChartData.GetTestSurveyData(62479); // if data is null set it to Test Data with 62479 random points
 #endif
 				return _data;
 			}
@@ -142,7 +142,7 @@ namespace ChartControls
 				if (kvp.Value == null || kvp.Value.Values == null || kvp.Value.Values.Length == 0)
 					continue;
 
-				double yValue = kvp.Value.Values[primarySeriesIdx]; // potential out of range exception
+				double yValue = kvp.Value.Values[PrimarySeriesIdx]; // potential out of range exception
 				if (yValue < lowestValue)
 					lowestValue = yValue;
 
@@ -153,6 +153,9 @@ namespace ChartControls
 
 		private void Bind() // if cData.Points is null this bombs, which we want
 		{
+			if (this.mChart.Series.Count < 1)
+				return;
+
 			var oList = Data.Sorts != null && Data.Sorts.Count > 0 ? Data.Sort(Data.Points, Data.Sorts.ToArray()) : Data.Points;
 
 			if (pageSize > 0)
@@ -166,19 +169,19 @@ namespace ChartControls
 
 			lowestValueIdx = new List<int>();
 
-			Series primary = this.mChart.Series[primarySeriesIdx]; // this bombs if there are no series, that's ok, want that. Out of range is currently checked in Form_Load()
+			Series primary = this.mChart.Series[PrimarySeriesIdx]; // Out of range is currently checked in Form_Load()
 
 			int dpi = 0;
 			foreach (var kvp in oList)
 			{
 				if (kvp.Value != null && kvp.Value.Values != null && kvp.Value.Values.Length > 0)
 				{
-					double yValue = kvp.Value.Values[primarySeriesIdx]; // potential out of range
+					double yValue = kvp.Value.Values[PrimarySeriesIdx]; // potential out of range
 
 					if (yValue == lowestValue) // possible precision check failure
 						lowestValueIdx.Add(dpi);
 
-					var srxp = Data.Series.ElementAt(primarySeriesIdx);
+					var srxp = Data.Series.ElementAt(PrimarySeriesIdx);
 
 					string sName = srxp.Name; // again, potential out of range // kvp.Value.Names.ElementAt(primarySeriesIdx);
 
@@ -200,7 +203,7 @@ namespace ChartControls
 
 					for (int si = 0; si < this.mChart.Series.Count; si++)
 					{
-						if (si == primarySeriesIdx) // we  use the datapoint above
+						if (si == PrimarySeriesIdx) // we  use the datapoint above
 							continue;
 
 						if (kvp.Value.Values.Length > si)
@@ -228,7 +231,7 @@ namespace ChartControls
 						}
 					}
 
-					if (ValidationComparison(compValueFirst, compValueSecond, primarySeriesIdx, out difference))
+					if (ValidationComparison(compValueFirst, compValueSecond, PrimarySeriesIdx, out difference))
 						PointSetLabel(datapoint, string.Format("{0}*", difference.ToString(srxp.YPointFormat)));
 					else if (srxp.EnablePointLabel && yValue > 0)
 						PointSetLabel(datapoint, string.Format("{0}{1}", yValue.ToString(srxp.YPointFormat), srxp.UnitOfMeasure));
@@ -260,7 +263,7 @@ namespace ChartControls
 					fireTrackBarEvent = false;
 					trackBar1.Value = 1;
 					fireTrackBarEvent = true;
-					PointSelected(chartIdx, primarySeriesIdx, true); // do raise the event
+					PointSelected(chartIdx, PrimarySeriesIdx, true); // do raise the event
 				}
 			}
 
@@ -279,7 +282,7 @@ namespace ChartControls
 					fireTrackBarEvent = false;
 					trackBar1.Value = chartIdx + 1; // trackBar1.Value isn't 0 based
 					fireTrackBarEvent = true;
-					PointSelected(lowestValueIdx[x], primarySeriesIdx);
+					PointSelected(lowestValueIdx[x], PrimarySeriesIdx);
 				}
 			}
 
@@ -322,7 +325,7 @@ namespace ChartControls
 			}
 		}
 
-		private void PointSelected(int pointIndex, int seriesIndex, bool raiseEvents = true)
+		internal void PointSelected(int pointIndex, int seriesIndex, bool raiseEvents = true)
 		{
 			if (pointIndex < 0) // left boundary check
 			{
@@ -354,7 +357,7 @@ namespace ChartControls
 
 				string tagName = (container != null) ? container.Name : (pt.XValue + 1).ToString(); // TagName is a key to a Dictionary, it cannot be null
 
-				string srxName = Data.Series != null && Data.Series.Count > primarySeriesIdx ? Data.Series.ElementAt(primarySeriesIdx).Name : "";
+				string srxName = Data.Series != null && Data.Series.Count > PrimarySeriesIdx ? Data.Series.ElementAt(PrimarySeriesIdx).Name : "";
 
 				this.lDataSelected.Text = string.Format(formatT, tagName, srxName, pt.YValues[0]); // only one YValue per Series, so use 0 indexer
 
@@ -586,16 +589,16 @@ namespace ChartControls
 			this.cbChartView.SelectedIndex = 0;
 			pageFormatString = this.cbChartView.Items[cbChartView.SelectedIndex].ToString();
 
-			primarySeriesIdx = Data.PrimaryArrayIndex;
-			if (primarySeriesIdx > this.mChart.Series.Count - 1) // code will still bomb if no series
-				primarySeriesIdx = this.mChart.Series.Count - 1; // prevents out of range exception
+			PrimarySeriesIdx = Data.PrimaryArrayIndex;
+			if (PrimarySeriesIdx > this.mChart.Series.Count - 1) // code will still bomb if no series
+				PrimarySeriesIdx = this.mChart.Series.Count - 1; // prevents out of range exception
 
 			defaultSorts = Data.Sorts;
 			defaultDescendingOrderBys = Data.DescendingOrderBys;
 
 			PointsScan();
 	
-			if (Data.Series != null) // remove this if statement?
+			if (Data.Series != null) // superfluous if statement?
 			{
 				var sortableSeries = Data.Series.Where(sr => sr.EnableSort &&
 					(!sr.RequiresUserSelection || !checkBoxShowUserSelection.Visible || checkBoxShowUserSelection.Checked));
@@ -679,7 +682,7 @@ namespace ChartControls
 					fireTrackBarEvent = false;
 					trackBar1.Value = chartIdx + 1;
 					fireTrackBarEvent = true;
-					PointSelected(chartIdx, primarySeriesIdx);
+					PointSelected(chartIdx, PrimarySeriesIdx);
 				}
 			}
 			else
@@ -688,7 +691,7 @@ namespace ChartControls
 				fireTrackBarEvent = false;
 				trackBar1.Value = chartIdx + 1;
 				fireTrackBarEvent = true;
-				PointSelected(chartIdx, primarySeriesIdx);
+				PointSelected(chartIdx, PrimarySeriesIdx);
 			}
 		}
 

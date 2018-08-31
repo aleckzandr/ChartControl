@@ -133,7 +133,7 @@
 			legendItem1.BorderWidth = 3;
 			legendItem1.Color = System.Drawing.Color.Yellow;
 			legendItem1.ImageStyle = System.Windows.Forms.DataVisualization.Charting.LegendImageStyle.Line;
-			legendItem1.Name = "Cuztom";
+			legendItem1.Name = "Custom";
 			legend1.CustomItems.Add(legendItem1);
 			legend1.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
 			legend1.ForeColor = System.Drawing.Color.White;
